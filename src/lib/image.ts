@@ -26,7 +26,7 @@ export async function maybeConvertHeic(buffer: Buffer, mime: string): Promise<Bu
   if (mime !== "image/heic" && mime !== "image/heif") return buffer;
   const { default: convert } = await import("heic-convert");
   const out = await convert({
-    buffer: new Uint8Array(buffer) as unknown as ArrayBufferLike,
+    buffer: Uint8Array.from(buffer),
     format: "JPEG",
     quality: 0.9,
   });
