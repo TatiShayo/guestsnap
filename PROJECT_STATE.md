@@ -3,7 +3,7 @@
 > Single source of truth for build continuity. Update after every milestone.
 > A fresh session with zero memory must be able to resume from this file alone.
 
-## Status: IN PROGRESS — core-flow milestone DONE, starting payments (2026-07-07)
+## Status: IN PROGRESS — core-flow + payments DONE, starting experience features (2026-07-07)
 
 Data mode is **memory** (no keys): a `.data/` JSON + blob store mirrors the
 Supabase interface exactly, so the whole app builds and runs with zero keys.
@@ -64,11 +64,14 @@ Every third-party integration sits behind a typed provider with a mock.
   see NEEDS HUMAN / next-session TODO: manual click-through or Playwright.)
 
 ## Next (milestone order per BUILD_PROMPT "Agent orchestration")
-1. ~~Core flow~~ — DONE this session.
-2. **Payments** (starting now): checkout route + webhook + mock checkout page
-   + tier gating + success-page upsell/order-bump + Pro Pack SKU.
-3. Experience: slideshow+realtime, QR/PDF kit, culling, video guestbook,
-   lifecycle emails, moderation+privacy UI, lifecycle cron, demo seed.
+1. ~~Core flow~~ — DONE.
+2. ~~Payments~~ — DONE: `/api/events/[slug]/checkout`, `/api/checkout/pro-pack`,
+   `/api/webhooks/stripe` (idempotent), `/mock/checkout`, upgrade panel +
+   success page (one-click upsell + referral card) + Pro Pack CTA +
+   credit-redeem route.
+3. **Experience** (starting now): slideshow+realtime, QR/PDF kit, culling,
+   video guestbook, lifecycle emails, moderation+privacy UI, lifecycle cron,
+   demo seed.
 4. Marketing/SEO, polish, security tests (RLS deny / rate-limit / EXIF),
    QA (Playwright e2e).
 

@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Tv } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { getData } from "@/lib/data";
 import { toMediaViews } from "@/lib/media";
 import { AppHeader } from "@/components/app-header";
 import { TIERS } from "@/lib/tiers";
 import { pluralize } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 import { GalleryGrid } from "./gallery-grid";
 import { UpgradePanel } from "./upgrade-panel";
 
@@ -49,6 +50,14 @@ export default async function HostGalleryPage({ params }: Params) {
               {pluralize(media.length, "photo or video")} · {spec.name} plan
             </p>
           </div>
+          <a
+            href={`/e/${event.slug}/live`}
+            target="_blank"
+            rel="noreferrer"
+            className={buttonVariants({ variant: "outline" })}
+          >
+            <Tv className="h-4 w-4" /> Live slideshow
+          </a>
         </div>
 
         <GalleryGrid
