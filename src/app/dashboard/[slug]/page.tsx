@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Tv } from "lucide-react";
+import { ArrowLeft, QrCode, Tv } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { getData } from "@/lib/data";
 import { toMediaViews } from "@/lib/media";
@@ -50,14 +50,19 @@ export default async function HostGalleryPage({ params }: Params) {
               {pluralize(media.length, "photo or video")} · {spec.name} plan
             </p>
           </div>
-          <a
-            href={`/e/${event.slug}/live`}
-            target="_blank"
-            rel="noreferrer"
-            className={buttonVariants({ variant: "outline" })}
-          >
-            <Tv className="h-4 w-4" /> Live slideshow
-          </a>
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/dashboard/${event.slug}/share`} className={buttonVariants({ variant: "outline" })}>
+              <QrCode className="h-4 w-4" /> QR & share kit
+            </Link>
+            <a
+              href={`/e/${event.slug}/live`}
+              target="_blank"
+              rel="noreferrer"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <Tv className="h-4 w-4" /> Live slideshow
+            </a>
+          </div>
         </div>
 
         <GalleryGrid
