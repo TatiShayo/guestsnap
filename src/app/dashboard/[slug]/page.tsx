@@ -9,6 +9,7 @@ import { AppHeader } from "@/components/app-header";
 import { TIERS } from "@/lib/tiers";
 import { pluralize } from "@/lib/utils";
 import { GalleryGrid } from "./gallery-grid";
+import { UpgradePanel } from "./upgrade-panel";
 
 interface Params {
   params: Promise<{ slug: string }>;
@@ -28,6 +29,7 @@ export default async function HostGalleryPage({ params }: Params) {
   const media = await data.listMedia(event.id, { includeHidden: true });
   const views = await toMediaViews(media);
   const spec = TIERS[event.tier];
+  const profile = await data.getProfile(user.id);
 
   return (
     <div className="grain min-h-screen">
@@ -53,6 +55,13 @@ export default async function HostGalleryPage({ params }: Params) {
           slug={event.slug}
           initialMedia={views}
           hideUploaderNames={event.hideUploaderNames}
+        />
+
+        <UpgradePanel
+          slug={event.slug}
+          eventId={event.id}
+          tier={event.tier}
+          eventCredits={profile?.eventCredits ?? 0}
         />
       </main>
     </div>

@@ -8,6 +8,7 @@ import { AppHeader } from "@/components/app-header";
 import { buttonVariants } from "@/components/ui/button";
 import { TIERS } from "@/lib/tiers";
 import { formatDate, pluralize } from "@/lib/utils";
+import { ProPackCta } from "./pro-pack-cta";
 
 export const metadata: Metadata = { title: "Your events" };
 
@@ -18,6 +19,8 @@ export default async function DashboardPage() {
   const data = getData();
   const events = await data.listEventsByHost(user.id);
   const counts = await Promise.all(events.map((e) => data.countMedia(e.id)));
+  const profile = await data.getProfile(user.id);
+  const showProPack = events.length >= 2 || (profile?.eventCredits ?? 0) > 0;
 
   return (
     <div className="grain min-h-screen">
@@ -74,6 +77,8 @@ export default async function DashboardPage() {
             })}
           </ul>
         )}
+
+        {showProPack ? <ProPackCta eventCredits={profile?.eventCredits ?? 0} /> : null}
       </main>
     </div>
   );

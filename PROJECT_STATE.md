@@ -3,7 +3,7 @@
 > Single source of truth for build continuity. Update after every milestone.
 > A fresh session with zero memory must be able to resume from this file alone.
 
-## Status: IN PROGRESS — core-flow milestone underway (2026-07-07)
+## Status: IN PROGRESS — core-flow milestone DONE, starting payments (2026-07-07)
 
 Data mode is **memory** (no keys): a `.data/` JSON + blob store mirrors the
 Supabase interface exactly, so the whole app builds and runs with zero keys.
@@ -47,13 +47,26 @@ Every third-party integration sits behind a typed provider with a mock.
 ### This session
 - Greened the scaffold (see commit "fix: green the scaffold"): tsc/lint/dep
   fixes. Repaired a corrupt `es-abstract` install that broke eslint.
+- Landed login, `/dashboard`, create-event form, `/e/[slug]` guest upload
+  (client compression, "drop onto stack" progress via opacity/contrast
+  ramp), upload API route (rate-limited, magic-byte, sharp re-encode/EXIF
+  strip, moderation, tier-limit), `/api/blob` signed-URL server, album-email
+  capture (growth loop).
+- **Core flow milestone DONE**: `/dashboard/[slug]` host gallery/moderation
+  grid (lazy-loaded tiles, filter by uploader/needs-review/favorites/hidden/
+  guestbook, single + bulk hide/show/favorite/approve/delete, lightbox).
+  New API routes: `PATCH`/`DELETE /api/events/[slug]/media/[id]`, `POST
+  .../media/bulk` (object-owner-checked, ids re-validated server-side —
+  never trusts a client-supplied batch), `POST .../report` (public,
+  rate-limited guest report button — PLAYBOOK content-safety requirement).
+  End-to-end verified by code path: create event -> guest uploads ->
+  host sees/moderates in gallery. (No browser smoke test run this session —
+  see NEEDS HUMAN / next-session TODO: manual click-through or Playwright.)
 
 ## Next (milestone order per BUILD_PROMPT "Agent orchestration")
-1. **Core flow** (in progress): `/login`, `/dashboard`, create-event form,
-   `/e/[slug]` guest upload, upload API route, `/api/blob` signed-URL server,
-   host gallery/moderation grid. THIS is the critical path.
-2. Payments: checkout route + webhook + mock checkout page + tier gating +
-   success-page upsell/order-bump.
+1. ~~Core flow~~ — DONE this session.
+2. **Payments** (starting now): checkout route + webhook + mock checkout page
+   + tier gating + success-page upsell/order-bump + Pro Pack SKU.
 3. Experience: slideshow+realtime, QR/PDF kit, culling, video guestbook,
    lifecycle emails, moderation+privacy UI, lifecycle cron, demo seed.
 4. Marketing/SEO, polish, security tests (RLS deny / rate-limit / EXIF),
