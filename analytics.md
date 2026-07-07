@@ -31,6 +31,7 @@ server events through `serverTrack()` (src/lib/analytics-server.ts). With no
 | `demo_viewed` | client | — | landing visitor opens the demo event |
 | `event_settings_updated` | server | `event_id`, `changed` | host changes moderation/privacy settings |
 | `culling_group_resolved` | client | `event_id` | host keeps sharpest + hides rest of a duplicate group |
+| `lifecycle_cron_ran` | server | counts per job | daily lifecycle cron completes |
 
 ## Funnels (build in PostHog day 1)
 1. Acquisition → activation: `$pageview` (landing) → `signup_completed` → `event_created` → `guest_upload_completed` (first = activation event)
