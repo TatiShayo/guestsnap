@@ -11,6 +11,8 @@ import { pluralize } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { GalleryGrid } from "./gallery-grid";
 import { UpgradePanel } from "./upgrade-panel";
+import { CullingPanel } from "./culling-panel";
+import { SettingsPanel } from "./settings-panel";
 
 interface Params {
   params: Promise<{ slug: string }>;
@@ -69,6 +71,18 @@ export default async function HostGalleryPage({ params }: Params) {
           slug={event.slug}
           initialMedia={views}
           hideUploaderNames={event.hideUploaderNames}
+        />
+
+        <CullingPanel slug={event.slug} enabled={spec.aiCulling} />
+
+        <SettingsPanel
+          slug={event.slug}
+          initial={{
+            requireApproval: event.requireApproval,
+            visibility: event.visibility,
+            hideUploaderNames: event.hideUploaderNames,
+            hasPinSet: !!event.slideshowPinHash,
+          }}
         />
 
         <UpgradePanel

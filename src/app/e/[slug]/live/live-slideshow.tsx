@@ -10,6 +10,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Flag } from "lucide-react";
 import { useAnalytics } from "@/components/analytics-provider";
 
 interface MediaItem {
@@ -46,8 +47,22 @@ export function LiveSlideshow({
   const [items, setItems] = useState<MediaItem[]>([]);
   const [index, setIndex] = useState(0);
   const [presenceCount] = useState<number | null>(null);
+  const [reported, setReported] = useState<Set<string>>(new Set());
   const sinceRef = useRef<string | null>(null);
   const kenBurnsIndex = useRef(0);
+
+  async function reportCurrent(id: string) {
+    setReported((prev) => new Set(prev).add(id));
+    try {
+      await fetch(`/api/events/${slug}/report`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ mediaId: id }),
+      });
+    } catch {
+      // best-effort — the item just stays visible until the next poll
+    }
+  }
 
   useEffect(() => {
     analytics.track("slideshow_viewed", { event_id: slug });
@@ -142,6 +157,18 @@ export function LiveSlideshow({
                 {current.uploaderName}
               </motion.p>
             ) : null}
+
+            <button
+              type="button"
+              onClick={() => void reportCurrent(current.id)}
+              disabled={reported.has(current.id)}
+              aria-label="Report this photo"
+              title="Report this photo"
+              className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-black/30 px-2.5 py-1.5 text-xs text-white/50 opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/50 hover:text-white/90 focus-visible:opacity-100 [@media(hover:none)]:opacity-60"
+            >
+              <Flag className="h-3 w-3" />
+              {reported.has(current.id) ? "Reported" : null}
+            </button>
           </motion.div>
         ) : (
           <EmptyStage title={title} />

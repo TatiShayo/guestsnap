@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Camera, Check, ImagePlus } from "lucide-react";
+import { Camera, Check, ImagePlus, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
 import { useAnalytics } from "@/components/analytics-provider";
+import { cn } from "@/lib/utils";
 import { AlbumCapture } from "./album-capture";
+import { GuestbookRecorder } from "./guestbook-recorder";
 
 type Tier = "free" | "standard" | "premium";
 
@@ -50,6 +52,8 @@ export function GuestUploader({
   const [name, setName] = useState("");
   const [items, setItems] = useState<Item[]>([]);
   const [limitHit, setLimitHit] = useState(remaining <= 0 && !unlimited);
+  const [mode, setMode] = useState<"photos" | "guestbook">("photos");
+  const [guestbookCount, setGuestbookCount] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const doneCount = items.filter((i) => i.status === "done").length;
 
@@ -151,36 +155,72 @@ export function GuestUploader({
         />
       </div>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept={allowGuestbook ? "image/*,video/*" : "image/*"}
-        multiple
-        className="sr-only"
-        onChange={(e) => {
-          void onFiles(e.target.files);
-          e.target.value = "";
-        }}
-      />
-
-      <Button
-        type="button"
-        size="lg"
-        className="w-full"
-        onClick={() => inputRef.current?.click()}
-      >
-        <ImagePlus className="h-5 w-5" /> Add your photos
-      </Button>
-
-      {!unlimited ? (
-        <p className="text-center text-xs text-muted-foreground tabular-nums">
-          {remaining - doneCount > 0
-            ? `${Math.max(0, remaining - doneCount)} more can be added to this album`
-            : "Album is filling up"}
-        </p>
+      {allowGuestbook ? (
+        <div className="grid grid-cols-2 gap-2 rounded-lg border border-border bg-muted/40 p-1">
+          <button
+            type="button"
+            onClick={() => setMode("photos")}
+            className={cn(
+              "flex items-center justify-center gap-1.5 rounded-md py-2 text-sm font-medium transition-colors",
+              mode === "photos" ? "bg-card shadow-soft" : "text-muted-foreground"
+            )}
+          >
+            <ImagePlus className="h-4 w-4" /> Photos
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("guestbook")}
+            className={cn(
+              "flex items-center justify-center gap-1.5 rounded-md py-2 text-sm font-medium transition-colors",
+              mode === "guestbook" ? "bg-card shadow-soft" : "text-muted-foreground"
+            )}
+          >
+            <Video className="h-4 w-4" /> Video message
+          </button>
+        </div>
       ) : null}
 
-      {items.length > 0 ? (
+      {mode === "guestbook" && allowGuestbook ? (
+        <GuestbookRecorder
+          slug={slug}
+          uploaderName={name}
+          deviceKey={deviceKey()}
+          onDone={() => setGuestbookCount((c) => c + 1)}
+        />
+      ) : (
+        <>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="sr-only"
+            onChange={(e) => {
+              void onFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+
+          <Button
+            type="button"
+            size="lg"
+            className="w-full"
+            onClick={() => inputRef.current?.click()}
+          >
+            <ImagePlus className="h-5 w-5" /> Add your photos
+          </Button>
+
+          {!unlimited ? (
+            <p className="text-center text-xs text-muted-foreground tabular-nums">
+              {remaining - doneCount > 0
+                ? `${Math.max(0, remaining - doneCount)} more can be added to this album`
+                : "Album is filling up"}
+            </p>
+          ) : null}
+        </>
+      )}
+
+      {mode === "photos" && items.length > 0 ? (
         <ul className="grid grid-cols-3 gap-2.5">
           {items.map((it) => (
             <li
@@ -213,18 +253,23 @@ export function GuestUploader({
             </li>
           ))}
         </ul>
-      ) : (
+      ) : mode === "photos" ? (
         <div className="flex flex-col items-center rounded-xl border border-dashed border-border py-10 text-center text-muted-foreground">
           <Camera className="h-8 w-8 text-primary/70" />
           <p className="mt-3 text-sm">Tap the button to add photos from your phone.</p>
         </div>
-      )}
+      ) : null}
 
-      {doneCount > 0 ? (
+      {doneCount > 0 || guestbookCount > 0 ? (
         <div className="rounded-lg border border-border bg-card p-4 text-center shadow-soft">
           <p className="font-display text-lg">Thank you</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {doneCount === 1 ? "Your photo was added." : `${doneCount} photos added.`}{" "}
+            {[
+              doneCount > 0 ? (doneCount === 1 ? "Your photo was added." : `${doneCount} photos added.`) : null,
+              guestbookCount > 0 ? "Your video message was added." : null,
+            ]
+              .filter(Boolean)
+              .join(" ")}{" "}
             Want the full album when it&apos;s ready?
           </p>
           <AlbumCapture slug={slug} eventId={eventId} className="mt-4" />
