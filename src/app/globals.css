@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* GuestSnap "modern heirloom" tokens — ivory canvas, ink text, terracotta
+   accent, muted sage secondary. Retheme of shadcn scaffolding (PLAYBOOK 1.1). */
+@layer base {
+  :root {
+    --background: 36 33% 97%; /* ivory #FAF8F5 */
+    --foreground: 24 10% 10%; /* ink #1C1917 */
+    --card: 40 33% 99%;
+    --card-foreground: 24 10% 10%;
+    --popover: 40 33% 99%;
+    --popover-foreground: 24 10% 10%;
+    --primary: 14 62% 47%; /* terracotta #C1502E */
+    --primary-foreground: 36 33% 97%;
+    --secondary: 108 12% 90%; /* pale sage */
+    --secondary-foreground: 24 10% 15%;
+    --muted: 36 20% 92%;
+    --muted-foreground: 24 8% 38%;
+    --accent: 30 28% 92%;
+    --accent-foreground: 24 10% 12%;
+    --destructive: 0 62% 42%;
+    --destructive-foreground: 36 33% 97%;
+    --border: 30 16% 86%;
+    --input: 30 16% 82%;
+    --ring: 14 62% 47%;
+    --radius: 0.5rem;
+    --ink: 24 10% 10%;
+    --ivory: 36 33% 97%;
+    --sage: 108 12% 42%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-size: 17px;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3 {
+    @apply font-display;
+    letter-spacing: -0.02em;
+  }
+
+  /* styled focus ring (PLAYBOOK 1.5) */
+  :focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: hsl(14 62% 47% / 0.18);
+  }
+}
+
+@layer utilities {
+  /* 3% paper-grain texture for large surfaces */
+  .grain {
+    position: relative;
+  }
+  .grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
