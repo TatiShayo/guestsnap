@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, QrCode, Tv } from "lucide-react";
+import { ArrowLeft, Download, QrCode, Tv } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { getData } from "@/lib/data";
 import { toMediaViews } from "@/lib/media";
@@ -64,6 +64,14 @@ export default async function HostGalleryPage({ params }: Params) {
             >
               <Tv className="h-4 w-4" /> Live slideshow
             </a>
+            {spec.zipDownload ? (
+              <a
+                href={`/api/events/${event.slug}/zip`}
+                className={buttonVariants({ variant: "default" })}
+              >
+                <Download className="h-4 w-4" /> Download all
+              </a>
+            ) : null}
           </div>
         </div>
 
