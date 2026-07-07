@@ -24,9 +24,6 @@ const ARCHIVE_GRACE_DAYS = 30; // soft-delete window before hard purge
 function daysSince(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / DAY_MS);
 }
-function daysUntil(iso: string): number {
-  return Math.floor((new Date(iso).getTime() - Date.now()) / DAY_MS);
-}
 
 export interface LifecycleRunResult {
   postEventEmailsSent: number;

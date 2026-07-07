@@ -178,7 +178,6 @@ export function GuestbookRecorder({
           </div>
         ) : null}
 
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video
           ref={videoRef}
           playsInline
