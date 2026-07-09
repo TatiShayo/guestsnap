@@ -13,7 +13,11 @@ import type {
   EventRecord, MediaFilter, MediaRecord, PaymentRecord, Profile,
 } from "./types";
 
-const DATA_DIR = path.join(process.cwd(), ".data");
+// Overridable so tests never touch the real dev/demo .data/ directory on
+// disk — the vitest setup file points this at a throwaway temp dir.
+const DATA_DIR = process.env.GUESTSNAP_DATA_DIR
+  ? path.resolve(process.env.GUESTSNAP_DATA_DIR)
+  : path.join(process.cwd(), ".data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
 const BLOB_DIR = path.join(DATA_DIR, "blobs");
 
