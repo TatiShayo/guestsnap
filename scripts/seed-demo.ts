@@ -31,20 +31,25 @@ const UPLOADERS = [
   "Maya & Leo", "Uncle Ray", "Chloe", "The best man", "Nina",
 ];
 
-const CAPTIONS = [
-  "First dance", "Golden hour", "The toast", "Confetti",
-  "Table nine", "Just married", "Cutting the cake", "Sparklers",
-  "The vows", "Bouquet toss", "On the dancefloor", "Family",
+// Varied dimensions so the demo gallery isn't a uniform grid of identical
+// aspect ratios — mirrors real phone photos (landscape, portrait, square).
+const DIMENSIONS: [number, number][] = [
+  [1600, 1067], // landscape 3:2
+  [1200, 1600], // portrait 3:4
+  [1600, 1600], // square
+  [1600, 900], // landscape 16:9
+  [1280, 1600], // portrait 4:5
 ];
 
 /** A soft, layered gradient "scene" — reads like a warm out-of-focus photo. */
-function scene(i: number, variant = 0): string {
+function scene(i: number, variant = 0): [string, number, number] {
   const [a, b, c] = PALETTES[(i + variant) % PALETTES.length];
+  const [w, h] = DIMENSIONS[(i + variant) % DIMENSIONS.length];
   const cx = 20 + ((i * 37 + variant * 11) % 60);
   const cy = 25 + ((i * 53) % 50);
   const r = 55 + ((i * 17) % 25);
   const glow = 30 + ((i * 13 + variant * 5) % 40);
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1067" viewBox="0 0 1600 1067">
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
     <defs>
       <radialGradient id="g" cx="${cx}%" cy="${cy}%" r="${r}%">
         <stop offset="0%" stop-color="${c}"/>
@@ -56,11 +61,12 @@ function scene(i: number, variant = 0): string {
         <stop offset="100%" stop-color="#000" stop-opacity="0.18"/>
       </linearGradient>
     </defs>
-    <rect width="1600" height="1067" fill="url(#g)"/>
-    <circle cx="${cx * 16}" cy="${cy * 10}" r="${glow * 3}" fill="#fff" opacity="0.12"/>
-    <circle cx="${1600 - cx * 12}" cy="${cy * 8}" r="${glow * 2}" fill="#fff" opacity="0.08"/>
-    <rect width="1600" height="1067" fill="url(#v)"/>
+    <rect width="${w}" height="${h}" fill="url(#g)"/>
+    <circle cx="${(cx / 100) * w}" cy="${(cy / 100) * h}" r="${(glow / 100) * Math.max(w, h)}" fill="#fff" opacity="0.12"/>
+    <circle cx="${w - (cx / 100) * w * 0.7}" cy="${(cy / 100) * h * 0.8}" r="${(glow / 100) * Math.max(w, h) * 0.6}" fill="#fff" opacity="0.08"/>
+    <rect width="${w}" height="${h}" fill="url(#v)"/>
   </svg>`;
+  return [svg, w, h];
 }
 
 async function main() {
@@ -108,7 +114,8 @@ async function main() {
   }
 
   // 3) Cover image.
-  const cover = await svgToJpeg(scene(99), 1600);
+  const [coverSvg, coverW] = scene(99);
+  const cover = await svgToJpeg(coverSvg, coverW);
   const coverPath = `events/${DEMO_SLUG}/cover.jpg`;
   await blobs.put(coverPath, cover, "image/jpeg");
   await data.updateEvent(event.id, { coverPath });
@@ -120,8 +127,8 @@ async function main() {
 
   let seq = 0;
   for (const p of plan) {
-    const svg = scene(p.i, p.dup ? 0 : p.variant);
-    const jpeg = await svgToJpeg(svg, 1600);
+    const [svg, w] = scene(p.i, p.dup ? 0 : p.variant);
+    const jpeg = await svgToJpeg(svg, w);
     const processed = await processImage(jpeg);
     const base = `events/${DEMO_SLUG}/media/${crypto.randomUUID()}`;
     const storagePath = `${base}.jpg`;
