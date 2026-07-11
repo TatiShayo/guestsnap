@@ -42,7 +42,7 @@ export default defineConfig({
     command: `npx next dev -p ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: false,
-    timeout: 120_000,
+    timeout: 240_000,
     env: {
       GUESTSNAP_DATA_DIR: dataDir,
       NEXT_PUBLIC_APP_URL: BASE_URL,
