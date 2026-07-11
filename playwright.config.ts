@@ -12,7 +12,7 @@ import { defineConfig, devices } from "@playwright/test";
  * Points the memory data/blob store at a throwaway temp dir so e2e runs
  * never touch the real project .data/ (dev sessions, the seeded demo event).
  */
-const PORT = 3100;
+const PORT = 3971; // uncommon port to avoid collisions with other local dev servers
 const BASE_URL = `http://localhost:${PORT}`;
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "guestsnap-e2e-data-"));
 
