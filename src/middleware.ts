@@ -10,6 +10,12 @@ const turnstileEnabled = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 function buildCsp(): string {
   const scriptSrc = ["'self'", "'unsafe-inline'"]; // Next.js inline runtime; nonce migration tracked in PROJECT_STATE
+  // Next.js dev mode (Fast Refresh / webpack eval-wrapped modules) requires
+  // 'unsafe-eval' to hydrate at all — without it every client component
+  // silently fails to hydrate (CSP blocks the eval(), no console error
+  // surfaces to the user, forms fall back to native/no-JS submission).
+  // Never added in production, where Next doesn't need eval().
+  if (process.env.NODE_ENV !== "production") scriptSrc.push("'unsafe-eval'");
   const connectSrc = ["'self'"];
   const frameSrc: string[] = [];
   if (posthogEnabled) {

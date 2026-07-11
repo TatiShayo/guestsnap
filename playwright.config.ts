@@ -18,8 +18,11 @@ const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "guestsnap-e2e-data-"));
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  timeout: 60_000,
-  expect: { timeout: 15_000 },
+  // Generous timeouts: this suite runs against `next dev`, where each route
+  // is compiled on first hit (cold-compile can take 10s+ under memory
+  // pressure) rather than pre-built like production.
+  timeout: 120_000,
+  expect: { timeout: 30_000 },
   fullyParallel: false,
   workers: 1,
   retries: 0,
