@@ -21,7 +21,7 @@ export default defineConfig({
   // Generous timeouts: this suite runs against `next dev`, where each route
   // is compiled on first hit (cold-compile can take 10s+ under memory
   // pressure) rather than pre-built like production.
-  timeout: 120_000,
+  timeout: 300_000,
   expect: { timeout: 30_000 },
   fullyParallel: false,
   workers: 1,

@@ -9,7 +9,7 @@
  * - Reads originals via the server-side blob store (not signed URLs), so the
  *   private bucket is never exposed.
  */
-import { PassThrough } from "stream";
+import { PassThrough, Readable } from "stream";
 import archiver from "archiver";
 import { getCurrentUser } from "@/lib/auth";
 import { getBlobs, getData } from "@/lib/data";
@@ -86,8 +86,10 @@ export async function GET(
   await serverTrack(user.id, "zip_downloaded", { event_id: event.id });
 
   const filename = `${safeName(event.slug, "guestsnap")}-photos.zip`;
-  // Cast the Node stream to a web ReadableStream for the Response body.
-  return new Response(pass as unknown as ReadableStream, {
+  // Convert the Node stream to a real web ReadableStream for the Response
+  // body — passing the Node stream directly (even cast) never pumps data
+  // through Next's Response and the request hangs forever.
+  return new Response(Readable.toWeb(pass) as unknown as ReadableStream, {
     headers: {
       "Content-Type": "application/zip",
       "Content-Disposition": `attachment; filename="${filename}"`,
