@@ -145,6 +145,26 @@ export class SupabaseStore implements DataStore {
     const { error } = await this.db.from("profiles").update(row).eq("id", id);
     if (error) fail("updateProfile", error);
   }
+  async redeemCredit(id: string): Promise<boolean> {
+    // Optimistic compare-and-swap: decrement only if the balance is still the
+    // value we read (`.eq("event_credits", current)`). If a concurrent redeem
+    // moved it first, the update matches zero rows and we retry with a fresh
+    // read. No SQL function or extra migration needed — pure PostgREST CAS.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const { data } = await this.db.from("profiles").select("event_credits").eq("id", id).maybeSingle();
+      const current = (data?.event_credits as number) ?? 0;
+      if (current <= 0) return false;
+      const { data: updated, error } = await this.db
+        .from("profiles")
+        .update({ event_credits: current - 1 })
+        .eq("id", id)
+        .eq("event_credits", current)
+        .select("id");
+      if (error) fail("redeemCredit", error);
+      if (updated && updated.length > 0) return true;
+    }
+    return false;
+  }
   async deleteProfile(id: string) {
     const events = await this.listEventsByHost(id);
     for (const e of events) await this.deleteEvent(e.id);

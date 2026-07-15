@@ -132,6 +132,14 @@ export interface DataStore {
   getProfile(id: string): Promise<Profile | null>;
   getProfileByEmail(email: string): Promise<Profile | null>;
   updateProfile(id: string, patch: Partial<Pick<Profile, "name" | "eventCredits">>): Promise<void>;
+  /**
+   * Atomically spend one Pro Pack event-credit. Returns true if a credit was
+   * available and consumed, false if the balance was already zero. Closes the
+   * check-then-act double-spend race in the credit-redemption path (a plain
+   * getProfile()+updateProfile() lets two concurrent redeems both read the
+   * same balance and each upgrade a different event for one credit).
+   */
+  redeemCredit(id: string): Promise<boolean>;
   deleteProfile(id: string): Promise<void>;
 
   // events

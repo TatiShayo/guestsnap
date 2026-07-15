@@ -20,12 +20,14 @@ export const POST = withErrorHandling(
 
     if (event.tier !== "free") return jsonError(400, "already_upgraded");
 
-    const profile = await data.getProfile(user.id);
-    if (!profile || profile.eventCredits <= 0) return jsonError(400, "no_credits");
+    // Atomically spend the credit BEFORE upgrading. A plain read-then-write let
+    // two concurrent redeems each read the same balance and upgrade a different
+    // event for one credit (double-spend). redeemCredit() closes that race.
+    const spent = await data.redeemCredit(user.id);
+    if (!spent) return jsonError(400, "no_credits");
 
     const spec = TIERS.standard;
     await data.updateEvent(event.id, { tier: "standard", uploadLimit: spec.uploadLimit, retentionMonths: spec.retentionMonths });
-    await data.updateProfile(user.id, { eventCredits: profile.eventCredits - 1 });
 
     await serverTrack(user.id, "upgrade_paid", { event_id: event.id, sku: "pro_pack_credit", amount_cents: 0 });
     return NextResponse.json({ ok: true });

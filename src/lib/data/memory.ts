@@ -93,6 +93,17 @@ export class MemoryStore implements DataStore {
     if (p) Object.assign(p, patch);
     persist(db);
   }
+  async redeemCredit(pid: string): Promise<boolean> {
+    // Atomic in the single-threaded event loop: the read, check and decrement
+    // run with no `await` between them, so two concurrent redeems can't both
+    // observe the same positive balance and each spend it.
+    const db = await loadDb();
+    const p = db.profiles.find((x) => x.id === pid);
+    if (!p || p.eventCredits <= 0) return false;
+    p.eventCredits -= 1;
+    persist(db);
+    return true;
+  }
   async deleteProfile(pid: string) {
     const db = await loadDb();
     const events = db.events.filter((e) => e.hostId === pid);

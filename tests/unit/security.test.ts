@@ -34,6 +34,7 @@ const { _resetRateLimits } = await import("@/lib/ratelimit");
 const { PATCH, DELETE } = await import("@/app/api/events/[slug]/media/[id]/route");
 const { POST: uploadPost } = await import("@/app/api/events/[slug]/upload/route");
 const { POST: slideshowAuthPost } = await import("@/app/api/events/[slug]/slideshow-auth/route");
+const { POST: redeemPost } = await import("@/app/api/events/[slug]/redeem-credit/route");
 import type { EventRecord } from "@/lib/data";
 
 function setSession(uid: string, email: string) {
@@ -214,6 +215,34 @@ describe("EXIF/GPS strip on the image pipeline", () => {
     const processed = await processImage(withGps);
     const after = await sharp(processed.original).metadata();
     expect(after.exif).toBeUndefined();
+  });
+});
+
+describe("Pro Pack credit double-spend race", () => {
+  it("one credit upgrades exactly one event even under concurrent redeems", async () => {
+    const data = getData();
+    const host = await data.upsertProfile({ id: "host-credit-sec", email: "host-credit@sec.test" });
+    await data.updateProfile(host.id, { eventCredits: 1 }); // exactly one credit
+    const eventA = await makeEvent(host.id, { tier: "free" });
+    const eventB = await makeEvent(host.id, { tier: "free" });
+    setSession(host.id, host.email);
+
+    const redeem = (slug: string) =>
+      redeemPost(new Request("http://test.local/api/redeem", { method: "POST" }), {
+        params: Promise.resolve({ slug }),
+      });
+
+    // Fire both redeems concurrently — the classic double-submit attack.
+    const [rA, rB] = await Promise.all([redeem(eventA.slug), redeem(eventB.slug)]);
+    const statuses = [rA.status, rB.status].sort();
+    expect(statuses).toEqual([200, 400]); // exactly one succeeds, one is rejected
+
+    // Balance never goes negative, and only ONE event was actually upgraded.
+    expect((await data.getProfile(host.id))?.eventCredits).toBe(0);
+    const upgraded = [await data.getEvent(eventA.id), await data.getEvent(eventB.id)].filter(
+      (e) => e?.tier === "standard"
+    );
+    expect(upgraded).toHaveLength(1);
   });
 });
 

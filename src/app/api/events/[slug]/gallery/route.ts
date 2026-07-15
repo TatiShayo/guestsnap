@@ -39,9 +39,13 @@ export const GET = withErrorHandling(
 
     const data = getData();
     const filter = event.visibility === "own" && uploaderKey ? { uploaderKey } : {};
+    // Always bound the read — even the `since` live-poll path. Media is returned
+    // newest-first, so new arrivals since a recent cursor are always within the
+    // newest PAGE_MAX rows; capping stops a public endpoint from being forced to
+    // load an entire large event's media on every poll (amplification/DoS).
     let media = await data.listMedia(
       event.id,
-      since ? filter : { ...filter, limit, offset }
+      since ? { ...filter, limit: PAGE_MAX } : { ...filter, limit, offset }
     );
     media = media.filter((m) => !m.isGuestbook); // guestbook has its own tab, not the slideshow feed
     if (since) media = media.filter((m) => m.createdAt > since);
