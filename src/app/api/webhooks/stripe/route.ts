@@ -43,8 +43,14 @@ export async function POST(req: Request) {
     const spec = SKUS[completed.sku];
     const targetTier = spec.targetTier;
 
+    // The per-session payment row is the DURABLE idempotency anchor. Because
+    // we release the webhook-id claim on failure (see catch), the same event
+    // can be delivered again — so anything non-idempotent (the pro-pack credit
+    // INCREMENT, the receipt email) must run exactly once, gated on this row
+    // not already existing. Tier upgrades are absolute sets and safe to repeat.
     const existingPayment = await data.getPaymentBySession(completed.sessionId);
-    if (!existingPayment) {
+    const firstDelivery = !existingPayment;
+    if (firstDelivery) {
       await data.insertPayment({
         eventId: completed.eventId,
         userId: completed.userId,
@@ -59,11 +65,11 @@ export async function POST(req: Request) {
 
     if (targetTier && completed.eventId) {
       await fulfillEventUpgrade(completed.eventId, targetTier, completed.withRetentionBump);
-    } else if (spec.proPackCredits) {
+    } else if (spec.proPackCredits && firstDelivery) {
       await fulfillProPack(completed.userId, spec.proPackCredits);
     }
 
-    await sendReceipt(completed.userId, completed.amountCents, spec.label);
+    if (firstDelivery) await sendReceipt(completed.userId, completed.amountCents, spec.label);
 
     await serverTrack(completed.userId, "upgrade_paid", {
       event_id: completed.eventId,
@@ -74,9 +80,13 @@ export async function POST(req: Request) {
       await serverTrack(completed.userId, "upsell_accepted", { event_id: completed.eventId });
     }
   } catch (e) {
-    // Fulfillment failed after we recorded the webhook id — log loudly so a
-    // human can reconcile; we do NOT unmark processed (avoids double-charge
-    // side effects on Stripe's automatic retry of a 500).
+    // Fulfillment failed after we claimed the webhook id. Release the claim so
+    // Stripe's automatic retry of this 500 can re-run fulfillment — otherwise a
+    // transient error (DB blip, email timeout) would permanently dedupe the
+    // retry and leave the customer paid-but-unfulfilled. Safe to retry: each
+    // step is idempotent (payment insert is guarded by getPaymentBySession,
+    // the tier/credit updates are absolute sets, not increments-per-delivery).
+    await data.unmarkWebhookProcessed(completed.webhookEventId).catch(() => {});
     captureError(e, { where: "webhooks.stripe.fulfill", sessionId: completed.sessionId });
     return NextResponse.json({ ok: false, error: "fulfillment_failed" }, { status: 500 });
   }

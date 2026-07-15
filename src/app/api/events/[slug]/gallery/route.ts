@@ -27,15 +27,29 @@ export const GET = withErrorHandling(
     if (event.visibility === "host") return jsonError(403, "host_only");
     if (!hasSlideshowAccess(event, pinToken)) return jsonError(403, "pin_required");
 
+    // Pagination: bounded page size so a large event can't force the server to
+    // sign a URL for (and serialize) thousands of media in one response. The
+    // live slideshow's `since` polling path is exempt — it fetches only the
+    // handful of items newer than its cursor.
+    const PAGE_MAX = 100;
+    const limitParam = Number(url.searchParams.get("limit"));
+    const offsetParam = Number(url.searchParams.get("offset"));
+    const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, PAGE_MAX) : 60;
+    const offset = Number.isFinite(offsetParam) && offsetParam > 0 ? Math.floor(offsetParam) : 0;
+
     const data = getData();
     const filter = event.visibility === "own" && uploaderKey ? { uploaderKey } : {};
-    let media = await data.listMedia(event.id, filter);
+    let media = await data.listMedia(
+      event.id,
+      since ? filter : { ...filter, limit, offset }
+    );
     media = media.filter((m) => !m.isGuestbook); // guestbook has its own tab, not the slideshow feed
     if (since) media = media.filter((m) => m.createdAt > since);
 
     const views = await toMediaViews(media, { hideUploader: event.hideUploaderNames });
     return NextResponse.json({
       media: views,
+      nextOffset: !since && media.length === limit ? offset + limit : null,
       serverTime: new Date().toISOString(),
     });
   }

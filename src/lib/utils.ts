@@ -21,3 +21,19 @@ export function formatDate(iso: string | Date): string {
 export function pluralize(n: number, singular: string, plural?: string): string {
   return `${n.toLocaleString()} ${n === 1 ? singular : plural || singular + "s"}`;
 }
+
+/**
+ * Escape a string for safe interpolation into HTML (email templates, any
+ * server-rendered raw HTML). React escapes JSX automatically, but our
+ * transactional emails build raw HTML strings — user-controlled values like
+ * an event title MUST be escaped here or they become a stored-XSS/HTML-
+ * injection vector delivered straight to a guest's or host's inbox.
+ */
+export function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}

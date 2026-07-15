@@ -201,6 +201,26 @@ export class SupabaseStore implements DataStore {
     if (error) fail("insertMedia", error);
     return mediaFromRow(data);
   }
+  async insertMediaWithinLimit(
+    m: Omit<MediaRecord, "id" | "createdAt">,
+    limit: number
+  ): Promise<MediaRecord | null> {
+    // Insert then verify: if the post-insert count exceeds the cap we lost a
+    // race, so delete our own row and report the limit as reached. This makes
+    // the cap eventually-consistent under concurrency without a DB round-trip
+    // per pre-check. The fully race-free form is the SQL function in
+    // migration 0002 (insert_media_within_limit) — swap this call for an
+    // `.rpc()` there if guest-upload concurrency ever gets high enough to
+    // matter. `limit` past MAX_SAFE_INTEGER (unlimited tiers) skips the check.
+    const rec = await this.insertMedia(m);
+    if (limit >= Number.MAX_SAFE_INTEGER) return rec;
+    const total = await this.countMedia(m.eventId);
+    if (total > limit) {
+      await this.deleteMedia(rec.id);
+      return null;
+    }
+    return rec;
+  }
   async getMedia(id: string) {
     const { data } = await this.db.from("media").select().eq("id", id).maybeSingle();
     return data ? mediaFromRow(data) : null;
@@ -212,6 +232,12 @@ export class SupabaseStore implements DataStore {
     if (filter.onlyNeedsReview) q = q.eq("needs_review", true);
     if (filter.uploaderKey) q = q.eq("uploader_key", filter.uploaderKey);
     if (filter.uploaderName) q = q.eq("uploader_name", filter.uploaderName);
+    if (filter.limit !== undefined) {
+      const offset = filter.offset ?? 0;
+      q = q.range(offset, offset + filter.limit - 1);
+    } else if (filter.offset) {
+      q = q.range(filter.offset, filter.offset + 999);
+    }
     const { data, error } = await q;
     if (error) fail("listMedia", error);
     return (data ?? []).map(mediaFromRow);
@@ -259,6 +285,9 @@ export class SupabaseStore implements DataStore {
   }
   async markWebhookProcessed(eventId: string) {
     await this.db.from("processed_webhooks").upsert({ id: eventId });
+  }
+  async unmarkWebhookProcessed(eventId: string) {
+    await this.db.from("processed_webhooks").delete().eq("id", eventId);
   }
 
   async addSubscriber(eventId: string, email: string) {

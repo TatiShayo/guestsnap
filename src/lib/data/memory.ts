@@ -150,13 +150,28 @@ export class MemoryStore implements DataStore {
     persist(db);
     return rec;
   }
+  async insertMediaWithinLimit(
+    m: Omit<MediaRecord, "id" | "createdAt">,
+    limit: number
+  ): Promise<MediaRecord | null> {
+    // Atomic in the single-threaded JS event loop: the count and the push
+    // happen with no `await` between them, so two concurrent uploads can't
+    // both observe count < limit and then both insert.
+    const db = await loadDb();
+    const count = db.media.reduce((n, x) => (x.eventId === m.eventId ? n + 1 : n), 0);
+    if (count >= limit) return null;
+    const rec: MediaRecord = { ...m, id: id(), createdAt: now() };
+    db.media.push(rec);
+    persist(db);
+    return rec;
+  }
   async getMedia(mid: string) {
     const db = await loadDb();
     return db.media.find((x) => x.id === mid) ?? null;
   }
   async listMedia(eventId: string, filter: MediaFilter = {}) {
     const db = await loadDb();
-    return db.media
+    const rows = db.media
       .filter((m) => m.eventId === eventId)
       .filter((m) => (filter.includeHidden ? true : !m.isHidden && !m.needsReview))
       .filter((m) => (filter.onlyGuestbook === undefined ? true : m.isGuestbook === filter.onlyGuestbook))
@@ -164,6 +179,11 @@ export class MemoryStore implements DataStore {
       .filter((m) => (filter.uploaderKey ? m.uploaderKey === filter.uploaderKey : true))
       .filter((m) => (filter.uploaderName ? m.uploaderName === filter.uploaderName : true))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const offset = filter.offset ?? 0;
+    if (offset || filter.limit !== undefined) {
+      return rows.slice(offset, filter.limit !== undefined ? offset + filter.limit : undefined);
+    }
+    return rows;
   }
   async countMedia(eventId: string) {
     const db = await loadDb();
@@ -210,6 +230,11 @@ export class MemoryStore implements DataStore {
   async markWebhookProcessed(eventId: string) {
     const db = await loadDb();
     if (!db.processedWebhooks.includes(eventId)) db.processedWebhooks.push(eventId);
+    persist(db);
+  }
+  async unmarkWebhookProcessed(eventId: string) {
+    const db = await loadDb();
+    db.processedWebhooks = db.processedWebhooks.filter((x) => x !== eventId);
     persist(db);
   }
 

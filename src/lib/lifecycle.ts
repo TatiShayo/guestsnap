@@ -15,7 +15,7 @@ import { getData, getBlobs } from "@/lib/data";
 import { getEmailProvider } from "@/lib/providers/email";
 import { emailShell } from "@/lib/email-templates";
 import { config } from "@/lib/config";
-import { formatDate, pluralize } from "@/lib/utils";
+import { formatDate, pluralize, escapeHtml } from "@/lib/utils";
 import { captureError } from "@/lib/monitoring";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -102,9 +102,10 @@ async function sendPostEventStats(eventId: string): Promise<boolean> {
 
   const media = await data.listMedia(eventId, { includeHidden: true });
   const uploaderCount = new Set(media.map((m) => m.uploaderKey).filter(Boolean)).size;
+  const title = escapeHtml(event.title);
 
   const html = emailShell({
-    heading: `${event.title} — the numbers are in`,
+    heading: `${title} — the numbers are in`,
     bodyHtml: `
       <p>Your event wrapped on ${formatDate(event.eventDate)}. Here's what your guests left behind:</p>
       <ul style="padding-left:20px;">
@@ -112,7 +113,7 @@ async function sendPostEventStats(eventId: string): Promise<boolean> {
         <li>${pluralize(uploaderCount, "guest")} contributed</li>
       </ul>
       <p>Download the full album while it's fresh, and thank you for using GuestSnap.</p>
-      <p style="margin-top:20px;">Planning another event? Use code <strong>${profile.referralCode}</strong>
+      <p style="margin-top:20px;">Planning another event? Use code <strong>${escapeHtml(profile.referralCode)}</strong>
       for $10 off your next one — and so does whoever you send it to.</p>`,
     ctaLabel: "Open your gallery",
     ctaUrl: `${config.appUrl}/dashboard/${event.slug}`,
@@ -132,10 +133,11 @@ async function sendArchiveWarning(eventId: string, daysLeft: number): Promise<bo
   const profile = await data.getProfile(event.hostId);
   if (!profile) return false;
 
+  const title = escapeHtml(event.title);
   const html = emailShell({
-    heading: `${event.title} archives in ${pluralize(Math.max(daysLeft, 1), "day")}`,
+    heading: `${title} archives in ${pluralize(Math.max(daysLeft, 1), "day")}`,
     bodyHtml: `
-      <p>Free events keep photos for 90 days after the event date. ${event.title} will archive soon —
+      <p>Free events keep photos for 90 days after the event date. ${title} will archive soon —
       download your photos now so you never lose them.</p>
       <p>Upgrading keeps everything for a full year (and unlocks ZIP download, the live slideshow,
       and more) — one click, no subscription.</p>`,
@@ -157,10 +159,11 @@ async function sendAlbumRequestEmails(eventId: string): Promise<number> {
   let sent = 0;
   for (const sub of subscribers) {
     if (await data.hasSentEmail("guest_album_ready", sub.email, eventId)) continue;
+    const title = escapeHtml(event.title);
     const html = emailShell({
-      heading: `${event.title} — your photos are ready`,
+      heading: `${title} — your photos are ready`,
       bodyHtml: `
-        <p>You asked us to send the album from ${event.title}. Here it is.</p>
+        <p>You asked us to send the album from ${title}. Here it is.</p>
         <p>Hosting your own wedding, party, or gathering? GuestSnap collects everyone's photos with
         just a QR code — no app, no accounts. First event's free.</p>`,
       ctaLabel: "View the gallery",

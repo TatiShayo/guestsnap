@@ -109,6 +109,9 @@ export interface MediaFilter {
   onlyNeedsReview?: boolean;
   uploaderKey?: string;
   uploaderName?: string;
+  /** Pagination — cap rows returned (newest first) and skip `offset` rows. */
+  limit?: number;
+  offset?: number;
 }
 
 export interface AdminStats {
@@ -143,6 +146,16 @@ export interface DataStore {
 
   // media
   insertMedia(m: Omit<MediaRecord, "id" | "createdAt">): Promise<MediaRecord>;
+  /**
+   * Atomically enforce the per-event upload cap: insert only if the current
+   * count is below `limit`, otherwise return null. Closes the check-then-act
+   * (TOCTOU) race that a plain countMedia()+insertMedia() leaves open under
+   * concurrent guest uploads.
+   */
+  insertMediaWithinLimit(
+    m: Omit<MediaRecord, "id" | "createdAt">,
+    limit: number
+  ): Promise<MediaRecord | null>;
   getMedia(id: string): Promise<MediaRecord | null>;
   listMedia(eventId: string, filter?: MediaFilter): Promise<MediaRecord[]>;
   countMedia(eventId: string): Promise<number>;
@@ -158,6 +171,9 @@ export interface DataStore {
   // webhook idempotency
   hasProcessedWebhook(eventId: string): Promise<boolean>;
   markWebhookProcessed(eventId: string): Promise<void>;
+  /** Release an idempotency claim so a Stripe retry can re-attempt fulfillment
+   * after a transient failure (see webhook route). */
+  unmarkWebhookProcessed(eventId: string): Promise<void>;
 
   // album subscribers (guest growth loop)
   addSubscriber(eventId: string, email: string): Promise<void>;

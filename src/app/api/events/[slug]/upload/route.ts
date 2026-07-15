@@ -64,7 +64,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const uploaderKey = ((form.get("uploaderKey") as string) || "").trim().slice(0, 64) || null;
   const wantsGuestbook = form.get("guestbook") === "1";
 
-  // 4. Tier upload limit — server-side count is the source of truth.
+  // 4. Tier upload limit — server-side count is the source of truth. A cheap
+  // pre-check rejects early; the authoritative, race-free enforcement is the
+  // atomic insertMediaWithinLimit() at persist time (below).
   const spec = TIERS[event.tier];
   const used = await data.countMedia(event.id);
   if (used >= spec.uploadLimit) {
@@ -120,7 +122,7 @@ async function handlePhoto(
   await blobs.put(storagePath, processed.original, "image/jpeg");
   await blobs.put(thumbPath, processed.thumb, "image/webp");
 
-  const media = await data.insertMedia({
+  const media = await data.insertMediaWithinLimit({
     eventId: event.id,
     storagePath,
     thumbPath,
@@ -139,7 +141,15 @@ async function handlePhoto(
     height: processed.height,
     durationSec: null,
     sizeBytes: processed.original.length,
-  });
+  }, TIERS[event.tier].uploadLimit);
+
+  if (!media) {
+    // Lost the atomic limit race — don't leave orphan blobs behind.
+    await blobs.delete(storagePath).catch(() => {});
+    await blobs.delete(thumbPath).catch(() => {});
+    await serverTrack("guest", "upload_limit_hit", { event_id: event.id, tier: event.tier });
+    return jsonError(403, "upload_limit_reached", { tier: event.tier });
+  }
 
   await serverTrack("guest", "guest_upload_completed", { event_id: event.id, media_id: media.id, type: "photo" });
   return NextResponse.json({ ok: true, id: media.id, needsReview });
@@ -168,7 +178,7 @@ async function handleVideo(
   const storagePath = `events/${event.id}/${Date.now()}-${rand()}.${ext}`;
   await getBlobs().put(storagePath, buffer, validated.mime);
 
-  const media = await data.insertMedia({
+  const media = await data.insertMediaWithinLimit({
     eventId: event.id,
     storagePath,
     thumbPath: null,
@@ -187,7 +197,13 @@ async function handleVideo(
     height: null,
     durationSec: dur,
     sizeBytes: buffer.length,
-  });
+  }, TIERS[event.tier].uploadLimit);
+
+  if (!media) {
+    await getBlobs().delete(storagePath).catch(() => {});
+    await serverTrack("guest", "upload_limit_hit", { event_id: event.id, tier: event.tier });
+    return jsonError(403, "upload_limit_reached", { tier: event.tier });
+  }
 
   await serverTrack("guest", "guest_upload_completed", { event_id: event.id, media_id: media.id, type: "video" });
   return NextResponse.json({ ok: true, id: media.id, needsReview: media.needsReview });
