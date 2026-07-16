@@ -3,6 +3,36 @@
 QR photo collection for weddings & events. Guests upload photos/videos from
 their phone browser — no app, no account. Hosts pay per event (one-time).
 
+> Scan the QR at the table → the whole room's camera rolls land in one live
+> gallery → the host moderates, runs a slideshow, and downloads every original.
+
+## What it does
+
+- **Guests**: scan → upload from the phone browser (client-side compression,
+  HEIC handled), optionally leave a name and a ≤30s video guestbook. No login.
+- **Hosts**: create an event, get a printable QR + PDF table cards, watch a
+  live gallery, moderate (hide/favorite/approve/bulk), run a PIN-protected
+  slideshow, AI-cull near-duplicates, and download a ZIP of originals.
+- **Business**: one-time tiered payment per event (Free/Standard/Premium),
+  one-click post-purchase upsell, Pro Pack credits for planners, post-event
+  retention lifecycle with automated emails.
+
+## Engineering highlights
+
+- **Runs with zero keys.** Every integration is a typed provider with a working
+  mock, so the app builds, runs, and is fully e2e-testable offline (see table
+  below). Same code path in mock and prod.
+- **Hardened public upload pipeline** — magic-byte validation, SVG rejection,
+  25MB/100MB caps, sharp re-encode (strips EXIF/GPS, caps decompression bombs),
+  NSFW moderation, and a **race-free** per-event upload limit.
+- **Object-level authorization** on every host route (`requireEventOwner`,
+  fails closed with 404), default-deny Postgres RLS, expiring signed media URLs.
+- **Idempotent payments** — signature-verified webhook, retry-safe fulfillment,
+  atomic credit redemption (double-spend closed and tested).
+- Full security header suite / CSP, sliding-window rate limiting, and a security
+  test suite (`tests/unit/security.test.ts`). See `ARCHITECTURE.md`,
+  `REVIEW_FINDINGS.md`, and `AUDIT_LOG.md`.
+
 ## Stack
 
 Next.js 15 (App Router, TypeScript, Tailwind) · Supabase (Postgres/Auth/Storage/Realtime) · Stripe Checkout · Resend · PostHog · Sentry · Vercel.
