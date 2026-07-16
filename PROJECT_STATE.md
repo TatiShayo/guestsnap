@@ -3,7 +3,26 @@
 > Single source of truth for build continuity. Update after every milestone.
 > A fresh session with zero memory must be able to resume from this file alone.
 
-## Status: e2e-verified (2026-07-11) — full guest→host→payment→ZIP path passes Playwright; see DoD scorecard below
+## Status: AUDITED & HARDENED (2026-07-16) — full audit+hardening pass complete; e2e path (guest→host→payment→ZIP) verified. See ARCHITECTURE.md / REVIEW_FINDINGS.md / AUDIT_LOG.md.
+
+### Audit/hardening pass (2026-07-16)
+Delivered the upgrade-protocol (Phases 2–3, 7) + PLAYBOOK Part 2 sweep:
+- **Docs**: `ARCHITECTURE.md`, `REVIEW_FINDINGS.md` (every finding + status),
+  `AUDIT_LOG.md` (found/fixed/added/deferred + proven exploit chain), portfolio README.
+- **Security (all verified/fixed)**: upload route (25MB cap + magic-byte +
+  server-side SVG reject + atomic upload-limit), EXIF/GPS strip + decompression
+  guard, no XSS (React escaping; SVG rejected; inputs capped), object-level AuthZ
+  on every host route + expiring signed blob URLs, webhook sig + idempotency +
+  retry-safe fulfillment, slideshow PIN lockout, prod CSP (no dev eval), rate-limiter pruning.
+- **Perf**: gallery pagination, DB indexes (`0002`), sharp `limitInputPixels`,
+  `next/image`, email idempotency, error boundaries (route + new root `global-error.tsx`).
+- **Exploit chain proven+fixed**: Pro Pack credit double-spend (atomic `redeemCredit`),
+  tested concurrently in `security.test.ts`.
+- **Gate**: tsc pass · eslint pass · vitest 25/25 · build compiled successfully · playwright e2e.
+
+---
+
+## Status (prior): e2e-verified (2026-07-11) — full guest→host→payment→ZIP path passes Playwright; see DoD scorecard below
 
 Data mode is **memory** (no keys): a `.data/` JSON + blob store mirrors the
 Supabase interface exactly, so the whole app builds and runs with zero keys.
