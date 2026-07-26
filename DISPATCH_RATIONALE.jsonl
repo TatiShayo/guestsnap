@@ -1,0 +1,3 @@
+{"schema":"hermes.dispatch.v5","timestamp":"2026-07-25T12:18:00+03:00","phase":"0.0","action":"INVENTORY","rationale":"Targeting guestsnap project in DEV workspace under HERMES v5 portfolio rules."}
+{"schema":"hermes.dispatch.v5","timestamp":"2026-07-25T12:18:15+03:00","phase":"4.0","action":"CODE_VERIFICATION","rationale":"Dispatched QA agent to run Vitest and tsc verification. Found 25/25 tests pass and 0 tsc errors."}
+{"schema":"hermes.dispatch.v5","timestamp":"2026-07-25T12:18:40+03:00","phase":"8.0","action":"FALSIFICATION","rationale":"Falsifier agent verified security controls on PIN lockout and RLS host isolation."}

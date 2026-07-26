@@ -1,0 +1,10 @@
+{
+  "schema": "hermes.findings.v4",
+  "run_id": "hermes-2026-07-25-g603",
+  "project": "guestsnap",
+  "phase": "8.0",
+  "produced_at": "2026-07-25T12:18:00+03:00",
+  "inputs_hash": "sha256:4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c",
+  "budget_spent": { "tokens": 85000, "wallclock_s": 210, "usd": 0.40 },
+  "findings": []
+}

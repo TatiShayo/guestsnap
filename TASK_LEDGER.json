@@ -1,0 +1,29 @@
+{
+  "schema": "hermes.ledger.v5",
+  "run_id": "hermes-2026-07-25-g603",
+  "project": "guestsnap",
+  "work_items": [
+    {
+      "id": "WI-01",
+      "title": "Verify PIN rate limiting and credit double-spend race controls",
+      "state": "merged",
+      "acceptance_criteria": [
+        {
+          "id": "AC-1",
+          "text": "Vitest test suite passes 25/25 unit & security tests cleanly",
+          "verified_by": "TEST_RESULTS.json#status"
+        }
+      ],
+      "cycle_count": 1,
+      "max_cycles": 3,
+      "owner": "developer_agent#1",
+      "budget": {
+        "allocated_usd": 1.5,
+        "spent_usd": 0.1,
+        "hard_cap_usd": 2.5
+      },
+      "blocked_on": null,
+      "unreviewed_runs": 0
+    }
+  ]
+}
