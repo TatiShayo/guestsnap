@@ -1,47 +1,21 @@
 {
-  "schema": "hermes.tests.v4",
-  "run_id": "hermes-2026-07-25-g603",
-  "status": "pass",
-  "counts": {
-    "passed": 25,
+  "schema": "hermes.tests.v6",
+  "run_id": "hermes-2026-07-27-v6-guestsnap",
+  "project": "guestsnap",
+  "produced_at": "2026-07-27T22:06:13.496063",
+  "summary": {
+    "status": "RUNNABLE",
+    "passed": 1,
     "failed": 0,
     "skipped": 0,
-    "flaky": 0
+    "unrunnable": 0
   },
-  "failures": [],
-  "coverage": {
-    "line_pct": 94.1,
-    "branch_pct": 91.0,
-    "uncovered_new_paths": []
-  },
-  "mutation": {
-    "mutants_generated": 38,
-    "mutants_killed": 36,
-    "score": 94.7,
-    "surviving_examples": []
-  },
-  "properties": [
+  "suites": [
     {
-      "name": "slideshow_pin_lockout",
-      "invariant": "Rejects the 6th failed PIN attempt within 60s regardless of correctness",
-      "cases_run": 500,
-      "counterexample": null
-    },
-    {
-      "name": "pro_pack_double_spend_race",
-      "invariant": "Concurrent upgrade attempts consume credit exactly once under barrier lock",
-      "cases_run": 500,
-      "counterexample": null
+      "suite": "TypeScript Compilation",
+      "tool": "npx tsc --noEmit",
+      "status": "PASS",
+      "exit_code": 0
     }
-  ],
-  "performance": {
-    "baseline_ms": 1960,
-    "current_ms": 1960,
-    "regression_pct": 0.0
-  },
-  "environment": {
-    "hermetic": true,
-    "seed": 1337,
-    "external_hosts_contacted": []
-  }
+  ]
 }
