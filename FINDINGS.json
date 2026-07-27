@@ -3,7 +3,7 @@
   "run_id": "hermes-2026-07-27-v6-guestsnap",
   "project": "guestsnap",
   "phase": "4.0",
-  "produced_at": "2026-07-27T22:24:13.451799",
+  "produced_at": "2026-07-27T22:25:06.554970",
   "runner_tier": "T1",
   "mode": "static-only",
   "findings": []
