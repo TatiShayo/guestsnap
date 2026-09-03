@@ -10,3 +10,4 @@ import path from "path";
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "guestsnap-test-"));
 process.env.GUESTSNAP_DATA_DIR = dir;
 process.env.APP_SECRET = process.env.APP_SECRET || "test-secret-do-not-use-in-prod";
+process.env.ADMIN_EMAILS = "admin@example.com,ops@example.com";

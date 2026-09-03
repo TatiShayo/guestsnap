@@ -153,7 +153,17 @@ class MockPaymentsProvider implements PaymentsProvider {
 
   /** Mock webhooks arrive as signed tokens from the mock checkout page. */
   async parseWebhook(rawBody: string, _signature: string | null): Promise<CompletedCheckout | null> {
-    const { token } = JSON.parse(rawBody) as { token: string };
+    let token: string;
+    try {
+      const parsed = JSON.parse(rawBody, (k, v) => {
+        if (k === "__proto__" || k === "constructor" || k === "prototype") return undefined;
+        return v;
+      }) as { token?: string };
+      if (!parsed?.token || typeof parsed.token !== "string") throw new Error("invalid body");
+      token = parsed.token;
+    } catch {
+      throw new Error("invalid mock webhook body");
+    }
     const payload = verifyToken<{
       kind: string; sessionId: string; sku: Sku; eventId: string | null;
       userId: string; amountCents: number; withRetentionBump: boolean;

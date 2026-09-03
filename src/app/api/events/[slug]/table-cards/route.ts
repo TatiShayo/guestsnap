@@ -37,10 +37,11 @@ export const GET = withErrorHandling(
 
     await serverTrack(user.id, "qr_downloaded", { event_id: event.id, format: "pdf" });
 
+    const cleanSlug = event.slug.replace(/[^a-zA-Z0-9-_]+/g, "-").replace(/^-+|-+$/g, "") || "event";
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         "content-type": "application/pdf",
-        "content-disposition": `inline; filename="${event.slug}-table-cards-${style}.pdf"`,
+        "content-disposition": `inline; filename="${cleanSlug}-table-cards-${style}.pdf"`,
         "cache-control": "private, max-age=3600",
       },
     });

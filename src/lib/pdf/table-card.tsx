@@ -5,6 +5,7 @@
  * built-in serif/sans families (Times/Helvetica) since custom TTF hosting
  * isn't wired up server-side; layout/rules carry the "letterpress" feel.
  */
+import React from "react";
 import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
 
 export type CardStyle = "classic" | "minimal" | "playful";

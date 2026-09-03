@@ -25,3 +25,26 @@ blob-report/
 .DS_Store
 *.tsbuildinfo
 .vercel
+
+# Universal HERMES Ignore Rules
+.npm-cache/
+dist/
+build/
+.turbo/
+.vercel/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+venv/
+.venv/
+env/
+*.egg-info/
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+$null
+*.zip
+Thumbs.db

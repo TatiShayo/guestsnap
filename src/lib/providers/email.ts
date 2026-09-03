@@ -45,11 +45,16 @@ class ResendProvider implements EmailProvider {
 class MockEmailProvider implements EmailProvider {
   readonly name = "mock";
   async send(msg: EmailMessage) {
-    const dir = path.join(process.cwd(), ".data", "emails");
+    const dataDir = process.env.GUESTSNAP_DATA_DIR
+      ? path.resolve(process.env.GUESTSNAP_DATA_DIR)
+      : path.join(process.cwd(), ".data");
+    const dir = path.join(dataDir, "emails");
     await fs.mkdir(dir, { recursive: true });
     const file = path.join(dir, `${Date.now()}-${msg.subject.replace(/[^a-z0-9]+/gi, "-").slice(0, 40)}.html`);
     await fs.writeFile(file, `<!-- to: ${msg.to} -->\n${msg.html}`, "utf8");
-    console.log(`[mock-email] to=${msg.to} subject="${msg.subject}" saved=${path.basename(file)}`);
+    if (process.env.NODE_ENV !== "test") {
+      console.log(`[mock-email] to=${msg.to} subject="${msg.subject}" saved=${path.basename(file)}`);
+    }
     return { ok: true, id: path.basename(file) };
   }
 }

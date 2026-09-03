@@ -27,6 +27,15 @@ export const GET = withErrorHandling(
     if (event.visibility === "host") return jsonError(403, "host_only");
     if (!hasSlideshowAccess(event, pinToken)) return jsonError(403, "pin_required");
 
+    // If visibility is restricted to own uploads, callers without an uploaderKey see nothing.
+    if (event.visibility === "own" && !uploaderKey) {
+      return NextResponse.json({
+        media: [],
+        nextOffset: null,
+        serverTime: new Date().toISOString(),
+      });
+    }
+
     // Pagination: bounded page size so a large event can't force the server to
     // sign a URL for (and serialize) thousands of media in one response. The
     // live slideshow's `since` polling path is exempt — it fetches only the
@@ -34,7 +43,8 @@ export const GET = withErrorHandling(
     const PAGE_MAX = 100;
     const limitParam = Number(url.searchParams.get("limit"));
     const offsetParam = Number(url.searchParams.get("offset"));
-    const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, PAGE_MAX) : 60;
+    const rawLimit = Number.isFinite(limitParam) ? Math.floor(limitParam) : 60;
+    const limit = rawLimit >= 1 ? Math.min(rawLimit, PAGE_MAX) : 60;
     const offset = Number.isFinite(offsetParam) && offsetParam > 0 ? Math.floor(offsetParam) : 0;
 
     const data = getData();

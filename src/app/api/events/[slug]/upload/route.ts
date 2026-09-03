@@ -59,9 +59,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const file = form.get("file");
   if (!(file instanceof File) || file.size === 0) return jsonError(400, "empty_file");
 
-  const uploaderNameRaw = ((form.get("uploaderName") as string) || "").trim().slice(0, 60);
+  const uploaderNameRaw = ((form.get("uploaderName") as string) || "")
+    .replace(/[\x00-\x1F\x7F]/g, "")
+    .trim()
+    .slice(0, 60);
   const uploaderName = uploaderNameRaw || null;
-  const uploaderKey = ((form.get("uploaderKey") as string) || "").trim().slice(0, 64) || null;
+  const uploaderKey = ((form.get("uploaderKey") as string) || "")
+    .replace(/[\x00-\x1F\x7F]/g, "")
+    .trim()
+    .slice(0, 64) || null;
   const wantsGuestbook = form.get("guestbook") === "1";
 
   // 4. Tier upload limit — server-side count is the source of truth. A cheap
@@ -86,7 +92,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const meta = { uploaderName, uploaderKey, wantsGuestbook, filename: file.name };
   try {
     if (check.value.kind === "photo") {
-      return await handlePhoto(event, buffer, meta);
+      return await handlePhoto(event, buffer, meta, check.value.mime);
     }
     return await handleVideo(event, buffer, check.value, meta);
   } catch (e) {
@@ -105,11 +111,12 @@ interface UploadMeta {
 async function handlePhoto(
   event: NonNullable<Awaited<ReturnType<ReturnType<typeof getData>["getEventBySlug"]>>>,
   buffer: Buffer,
-  meta: UploadMeta
+  meta: UploadMeta,
+  mime?: string
 ): Promise<Response> {
   const data = getData();
-  // 6. Re-encode -> strips EXIF/GPS, neutralizes malformed files.
-  const processed = await processImage(buffer);
+  // 6. Re-encode -> strips EXIF/GPS, neutralizes malformed files, handles HEIC.
+  const processed = await processImage(buffer, mime);
 
   // 7. Moderation on the re-encoded image.
   const mod = await getModerationProvider().checkImage(processed.original, meta.filename);

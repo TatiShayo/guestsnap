@@ -60,7 +60,7 @@ export const config = {
   },
 
   cronSecret: process.env.CRON_SECRET || "",
-  adminEmails: (process.env.ADMIN_EMAILS || "")
+  adminEmails: (process.env.ADMIN_EMAILS || "admin@example.com")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean),

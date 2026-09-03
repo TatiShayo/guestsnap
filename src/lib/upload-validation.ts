@@ -25,18 +25,36 @@ export type UploadRejection =
   | "video_too_large"
   | "video_too_long";
 
+export function isSvg(buffer: Buffer): boolean {
+  if (buffer.length === 0) return false;
+  // Sniff sample from up to first 65536 bytes, removing BOM, null bytes and trimming
+  const sampleLen = Math.min(buffer.length, 65536);
+  const sample = buffer.subarray(0, sampleLen).toString("utf8").replace(/^\uFEFF/, "").replace(/\0/g, "").trimStart().toLowerCase();
+  const stripped = sample.replace(/<!--[\s\S]*?-->/g, "").trimStart();
+  return (
+    stripped.startsWith("<svg") ||
+    stripped.startsWith("<?xml") ||
+    stripped.startsWith("<!doctype svg") ||
+    stripped.startsWith("<!doctype html") ||
+    stripped.startsWith("<html") ||
+    stripped.includes("<svg") ||
+    stripped.includes("<script") ||
+    stripped.includes('xmlns="http://www.w3.org/2000/svg"') ||
+    stripped.includes("xmlns='http://www.w3.org/2000/svg'")
+  );
+}
+
 export async function validateUpload(buffer: Buffer): Promise<
   { ok: true; value: ValidatedUpload } | { ok: false; reason: UploadRejection }
 > {
   if (buffer.length === 0) return { ok: false, reason: "empty_file" };
 
   // Reject SVG early (XSS vector) — file-type doesn't detect SVG, so sniff.
-  const head = buffer.subarray(0, 512).toString("utf8").trimStart().toLowerCase();
-  if (head.startsWith("<?xml") || head.startsWith("<svg")) {
+  if (isSvg(buffer)) {
     return { ok: false, reason: "svg_rejected" };
   }
 
-  const detected = await fileTypeFromBuffer(buffer);
+  const detected = await fileTypeFromBuffer(buffer.subarray(0, 8192));
   if (!detected) return { ok: false, reason: "unsupported_type" };
 
   if (ALLOWED_IMAGE_MIMES.has(detected.mime)) {
@@ -62,17 +80,25 @@ export async function validateUpload(buffer: Buffer): Promise<
  */
 export function probeMp4Duration(buffer: Buffer): number | null {
   const idx = buffer.indexOf("mvhd");
-  if (idx < 0 || idx + 28 > buffer.length) return null;
+  if (idx < 0 || idx + 8 > buffer.length) return null;
   const version = buffer.readUInt8(idx + 4);
   try {
+    let timescale = 0;
+    let duration = 0;
     if (version === 1) {
-      const timescale = buffer.readUInt32BE(idx + 24);
-      const duration = Number(buffer.readBigUInt64BE(idx + 28));
-      return timescale ? duration / timescale : null;
+      if (idx + 36 > buffer.length) return null;
+      timescale = buffer.readUInt32BE(idx + 24);
+      const rawDur = buffer.readBigUInt64BE(idx + 28);
+      duration = Number(rawDur);
+    } else {
+      if (idx + 24 > buffer.length) return null;
+      timescale = buffer.readUInt32BE(idx + 16);
+      duration = buffer.readUInt32BE(idx + 20);
     }
-    const timescale = buffer.readUInt32BE(idx + 16);
-    const duration = buffer.readUInt32BE(idx + 20);
-    return timescale ? duration / timescale : null;
+    if (!timescale || timescale <= 0) return null;
+    const durSec = duration / timescale;
+    if (!Number.isFinite(durSec) || isNaN(durSec) || durSec < 0) return null;
+    return durSec;
   } catch {
     return null;
   }

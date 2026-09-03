@@ -9,6 +9,7 @@
  */
 import { NextResponse } from "next/server";
 import { config } from "@/lib/config";
+import { timingSafeEqualString } from "@/lib/tokens";
 import { runLifecycleJobs } from "@/lib/lifecycle";
 import { captureError } from "@/lib/monitoring";
 import { serverTrack } from "@/lib/analytics-server";
@@ -18,8 +19,9 @@ export const maxDuration = 60;
 
 export async function GET(req: Request) {
   if (config.cronSecret) {
-    const auth = req.headers.get("authorization");
-    if (auth !== `Bearer ${config.cronSecret}`) {
+    const auth = req.headers.get("authorization") || "";
+    const expected = `Bearer ${config.cronSecret}`;
+    if (!timingSafeEqualString(auth, expected)) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
   }

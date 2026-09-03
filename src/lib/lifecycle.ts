@@ -119,7 +119,8 @@ async function sendPostEventStats(eventId: string): Promise<boolean> {
     ctaUrl: `${config.appUrl}/dashboard/${event.slug}`,
   });
 
-  const res = await getEmailProvider().send({ to: profile.email, subject: `Your ${event.title} recap`, html });
+  const cleanTitle = (event.title || "Event").replace(/[\r\n]+/g, " ").trim();
+  const res = await getEmailProvider().send({ to: profile.email, subject: `Your ${cleanTitle} recap`, html });
   if (res.ok) await data.recordEmailSent("post_event_stats", "host", eventId);
   return res.ok;
 }
@@ -145,7 +146,8 @@ async function sendArchiveWarning(eventId: string, daysLeft: number): Promise<bo
     ctaUrl: `${config.appUrl}/dashboard/${event.slug}`,
   });
 
-  const res = await getEmailProvider().send({ to: profile.email, subject: `${event.title} — archiving soon`, html });
+  const cleanTitle = (event.title || "Event").replace(/[\r\n]+/g, " ").trim();
+  const res = await getEmailProvider().send({ to: profile.email, subject: `${cleanTitle} — archiving soon`, html });
   if (res.ok) await data.recordEmailSent("archive_warning", "host", eventId);
   return res.ok;
 }
@@ -169,7 +171,8 @@ async function sendAlbumRequestEmails(eventId: string): Promise<number> {
       ctaLabel: "View the gallery",
       ctaUrl: `${config.appUrl}/e/${event.slug}`,
     });
-    const res = await getEmailProvider().send({ to: sub.email, subject: `${event.title} — your photos`, html });
+    const cleanTitle = (event.title || "Event").replace(/[\r\n]+/g, " ").trim();
+    const res = await getEmailProvider().send({ to: sub.email, subject: `${cleanTitle} — your photos`, html });
     if (res.ok) {
       await data.recordEmailSent("guest_album_ready", sub.email, eventId);
       sent++;

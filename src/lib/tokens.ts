@@ -18,17 +18,30 @@ export function signToken(payload: Record<string, unknown>): string {
   return `${body}.${sig}`;
 }
 
+export function timingSafeEqualString(a: string, b: string): boolean {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  const key = crypto.randomBytes(32);
+  const hashA = crypto.createHmac("sha256", key).update(a).digest();
+  const hashB = crypto.createHmac("sha256", key).update(b).digest();
+  return crypto.timingSafeEqual(hashA, hashB);
+}
+
 export function verifyToken<T = Record<string, unknown>>(token: string): T | null {
+  if (!token || typeof token !== "string") return null;
   const dot = token.lastIndexOf(".");
   if (dot < 0) return null;
   const body = token.slice(0, dot);
   const sig = token.slice(dot + 1);
+  if (!body || !sig) return null;
   const expected = b64url(crypto.createHmac("sha256", config.appSecret).update(body).digest());
-  const a = Buffer.from(sig), b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  if (!timingSafeEqualString(sig, expected)) return null;
   try {
-    const payload = JSON.parse(fromB64url(body).toString("utf8")) as T & { exp?: number };
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
+    const jsonStr = fromB64url(body).toString("utf8");
+    const payload = JSON.parse(jsonStr, (k, v) => {
+      if (k === "__proto__" || k === "constructor" || k === "prototype") return undefined;
+      return v;
+    }) as T & { exp?: number };
+    if (payload && typeof payload.exp === "number" && payload.exp < Math.floor(Date.now() / 1000)) return null;
     return payload;
   } catch {
     return null;
@@ -44,8 +57,17 @@ export function hashPin(pin: string): string {
 }
 
 export function verifyPin(pin: string, stored: string): boolean {
-  const [saltHex, hashHex] = stored.split(":");
-  if (!saltHex || !hashHex) return false;
-  const hash = crypto.scryptSync(pin, Buffer.from(saltHex, "hex"), 32);
-  return crypto.timingSafeEqual(hash, Buffer.from(hashHex, "hex"));
+  if (!pin || !stored || typeof stored !== "string") return false;
+  try {
+    const [saltHex, hashHex] = stored.split(":");
+    if (!saltHex || !hashHex) return false;
+    const salt = Buffer.from(saltHex, "hex");
+    const hashBuffer = Buffer.from(hashHex, "hex");
+    if (salt.length !== 16 || hashBuffer.length !== 32) return false;
+    const hash = crypto.scryptSync(pin, salt, 32);
+    return crypto.timingSafeEqual(hash, hashBuffer);
+  } catch {
+    return false;
+  }
 }
+

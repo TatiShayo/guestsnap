@@ -28,10 +28,11 @@ export const GET = withErrorHandling(
 
     await serverTrack(user.id, "qr_downloaded", { event_id: event.id, format: "png" });
 
+    const cleanSlug = event.slug.replace(/[^a-zA-Z0-9-_]+/g, "-").replace(/^-+|-+$/g, "") || "event";
     return new NextResponse(new Uint8Array(png), {
       headers: {
         "content-type": "image/png",
-        "content-disposition": `inline; filename="${event.slug}-qr.png"`,
+        "content-disposition": `inline; filename="${cleanSlug}-qr.png"`,
         "cache-control": "private, max-age=3600",
       },
     });

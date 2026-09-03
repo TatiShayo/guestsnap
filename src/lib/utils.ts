@@ -29,7 +29,16 @@ export function pluralize(n: number, singular: string, plural?: string): string 
  * an event title MUST be escaped here or they become a stored-XSS/HTML-
  * injection vector delivered straight to a guest's or host's inbox.
  */
-export function escapeHtml(input: string): string {
+export function escapeHtml(input: unknown): string {
+  if (typeof input !== "string") {
+    if (input === null || input === undefined) return "";
+    return String(input)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
   return input
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")

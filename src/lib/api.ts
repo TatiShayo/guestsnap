@@ -39,7 +39,13 @@ export function withErrorHandling<Args extends unknown[]>(
 export async function parseBody<S extends z.ZodTypeAny>(req: Request, schema: S): Promise<z.infer<S>> {
   let raw: unknown;
   try {
-    raw = await req.json();
+    const text = await req.text();
+    raw = JSON.parse(text, (key, value) => {
+      if (key === "__proto__" || key === "constructor" || key === "prototype") {
+        return undefined;
+      }
+      return value;
+    });
   } catch {
     throw new ApiError(400, "invalid_json");
   }

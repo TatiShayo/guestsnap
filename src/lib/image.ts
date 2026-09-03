@@ -21,22 +21,36 @@ export interface ProcessedImage {
 
 const MAX_DIMENSION = 2400;
 const THUMB_WIDTH = 600;
+export const SHARP_OPTIONS = { failOn: "error" as const, limitInputPixels: 50_000_000 };
 
-export async function maybeConvertHeic(buffer: Buffer, mime: string): Promise<Buffer> {
-  if (mime !== "image/heic" && mime !== "image/heif") return buffer;
-  const { default: convert } = await import("heic-convert");
-  const out = await convert({
-    buffer: Uint8Array.from(buffer),
-    format: "JPEG",
-    quality: 0.9,
-  });
-  return Buffer.from(out);
+export async function maybeConvertHeic(buffer: Buffer, mime?: string): Promise<Buffer> {
+  const isHeic =
+    mime === "image/heic" ||
+    mime === "image/heif" ||
+    (buffer.length >= 12 &&
+      (buffer.toString("ascii", 4, 12).includes("ftypheic") ||
+        buffer.toString("ascii", 4, 12).includes("ftypmif1") ||
+        buffer.toString("ascii", 4, 12).includes("ftypheix") ||
+        buffer.toString("ascii", 4, 12).includes("ftypmsf1")));
+  if (!isHeic) return buffer;
+  try {
+    const { default: convert } = await import("heic-convert");
+    const out = await convert({
+      buffer: Uint8Array.from(buffer),
+      format: "JPEG",
+      quality: 0.9,
+    });
+    return Buffer.from(out);
+  } catch {
+    throw new Error("Failed to convert HEIC/HEIF image");
+  }
 }
 
-export async function processImage(input: Buffer): Promise<ProcessedImage> {
+export async function processImage(input: Buffer, mime?: string): Promise<ProcessedImage> {
+  const normalized = await maybeConvertHeic(input, mime);
   // rotate() applies EXIF orientation; the jpeg() re-encode then writes a
   // clean file with NO metadata (sharp strips it unless withMetadata is set).
-  const base = sharp(input, { failOn: "error", limitInputPixels: 80_000_000 }).rotate();
+  const base = sharp(normalized, SHARP_OPTIONS).rotate();
 
   const original = await base
     .clone()
@@ -44,17 +58,17 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
     .jpeg({ quality: 82, mozjpeg: true })
     .toBuffer();
 
-  const meta = await sharp(original).metadata();
+  const meta = await sharp(original, SHARP_OPTIONS).metadata();
   const width = meta.width ?? 0;
   const height = meta.height ?? 0;
 
-  const thumb = await sharp(original)
+  const thumb = await sharp(original, SHARP_OPTIONS)
     .resize({ width: THUMB_WIDTH, withoutEnlargement: true })
     .webp({ quality: 74 })
     .toBuffer();
 
   // dHash from 9x8 grayscale
-  const gray = await sharp(original)
+  const gray = await sharp(original, SHARP_OPTIONS)
     .grayscale()
     .resize(9, 8, { fit: "fill" })
     .raw()
@@ -73,7 +87,7 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
  */
 export async function computeSharpness(image: Buffer): Promise<number> {
   const size = 256;
-  const { data, info } = await sharp(image)
+  const { data, info } = await sharp(image, SHARP_OPTIONS)
     .grayscale()
     .resize(size, size, { fit: "inside" })
     .raw()
@@ -91,10 +105,11 @@ export async function computeSharpness(image: Buffer): Promise<number> {
   }
   if (n === 0) return 0;
   const mean = sum / n;
-  return Math.round(sumSq / n - mean * mean);
+  const variance = Math.max(0, sumSq / n - mean * mean);
+  return Math.round(variance);
 }
 
 /** Rasterize an SVG string to JPEG (used by the demo seed script). */
 export async function svgToJpeg(svg: string, width = 1600): Promise<Buffer> {
-  return sharp(Buffer.from(svg)).resize({ width }).jpeg({ quality: 85 }).toBuffer();
+  return sharp(Buffer.from(svg), SHARP_OPTIONS).resize({ width }).jpeg({ quality: 85 }).toBuffer();
 }

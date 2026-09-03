@@ -168,6 +168,7 @@ export class MemoryStore implements DataStore {
     // Atomic in the single-threaded JS event loop: the count and the push
     // happen with no `await` between them, so two concurrent uploads can't
     // both observe count < limit and then both insert.
+    if (!Number.isFinite(limit) || limit <= 0) return null;
     const db = await loadDb();
     const count = db.media.reduce((n, x) => (x.eventId === m.eventId ? n + 1 : n), 0);
     if (count >= limit) return null;
@@ -309,8 +310,13 @@ export class MemoryStore implements DataStore {
 export class MemoryBlobStore implements BlobStore {
   private fullPath(p: string) {
     // prevent path traversal out of the blob dir
-    const resolved = path.resolve(BLOB_DIR, p.replace(/^\/+/, ""));
-    if (!resolved.startsWith(path.resolve(BLOB_DIR))) throw new Error("invalid path");
+    if (!p || typeof p !== "string" || p.includes("\0")) throw new Error("invalid path");
+    const baseDir = path.resolve(BLOB_DIR);
+    const resolved = path.resolve(baseDir, p.replace(/^\/+/, ""));
+    const baseDirWithSep = baseDir.endsWith(path.sep) ? baseDir : baseDir + path.sep;
+    if (resolved !== baseDir && !resolved.startsWith(baseDirWithSep)) {
+      throw new Error("invalid path");
+    }
     return resolved;
   }
   async put(p: string, data: Buffer, contentType: string) {

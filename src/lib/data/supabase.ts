@@ -225,6 +225,7 @@ export class SupabaseStore implements DataStore {
     m: Omit<MediaRecord, "id" | "createdAt">,
     limit: number
   ): Promise<MediaRecord | null> {
+    if (!Number.isFinite(limit) || limit <= 0) return null;
     // Insert then verify: if the post-insert count exceeds the cap we lost a
     // race, so delete our own row and report the limit as reached. This makes
     // the cap eventually-consistent under concurrency without a DB round-trip

@@ -26,7 +26,10 @@ export function hammingDistance(a: string, b: string): number {
   if (!a || !b || a.length !== b.length) return 64;
   let dist = 0;
   for (let i = 0; i < a.length; i++) {
-    let x = parseInt(a[i], 16) ^ parseInt(b[i], 16);
+    const na = parseInt(a[i], 16);
+    const nb = parseInt(b[i], 16);
+    if (isNaN(na) || isNaN(nb)) return 64;
+    let x = na ^ nb;
     while (x) {
       dist += x & 1;
       x >>= 1;
