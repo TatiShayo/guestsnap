@@ -1,11 +1,16 @@
 /**
  * Daily lifecycle cron (Vercel Cron -> this route). Auth: `Authorization:
  * Bearer <CRON_SECRET>` — Vercel Cron sends this automatically when
- * CRON_SECRET is set; without it (local/dev, no key configured) the route
- * still runs so lifecycle jobs are testable with zero keys, matching the
- * "never stall on missing keys" rule. Runs post-event stats/referral email,
- * guest album-request fulfillment, archive warnings, soft-archive, and
- * hard-purge after the 30-day grace window.
+ * CRON_SECRET is set.
+ *
+ * FAIL CLOSED: this route soft-archives events and HARD-PURGES guest media
+ * after the 30-day grace window, so an unauthenticated run is catastrophic.
+ * When CRON_SECRET is not configured the route refuses to run entirely (404,
+ * indistinguishable from a missing route) — the "never stall on missing keys"
+ * rule applies to providers, never to authorization on destructive routes.
+ * Runs post-event stats/referral email, guest album-request fulfillment,
+ * archive warnings, soft-archive, and hard-purge after the 30-day grace
+ * window.
  */
 import { NextResponse } from "next/server";
 import { config } from "@/lib/config";
@@ -18,12 +23,15 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function GET(req: Request) {
-  if (config.cronSecret) {
-    const auth = req.headers.get("authorization") || "";
-    const expected = `Bearer ${config.cronSecret}`;
-    if (!timingSafeEqualString(auth, expected)) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    }
+  // No configured secret -> refuse to run at all (fail closed, not open).
+  if (!config.cronSecret) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const auth = req.headers.get("authorization") || "";
+  const expected = `Bearer ${config.cronSecret}`;
+  if (!timingSafeEqualString(auth, expected)) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
   try {
