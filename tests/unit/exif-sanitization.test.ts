@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { maybeConvertHeic } from "../src/lib/image";
-import { TIERS, tierForCents, canUploadMore } from "../src/lib/tiers";
+import { maybeConvertHeic } from "@/lib/image";
+import { TIERS, tierForCents, canUploadMore } from "@/lib/tiers";
 
 describe("GuestSnap Privacy & Tier Invariants", () => {
   it("detects HEIC magic bytes in raw buffers without throwing", async () => {

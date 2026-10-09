@@ -88,3 +88,15 @@ export const VIDEO_MAX_BYTES = 100 * 1024 * 1024; // 100MB
 export function tierSpec(tier: Tier): TierSpec {
   return TIERS[tier];
 }
+
+/** Reverse lookup: amount paid (cents) -> tier it buys. */
+export function tierForCents(cents: number): Tier {
+  if (cents >= TIERS.premium.priceCents) return "premium";
+  if (cents >= TIERS.standard.priceCents) return "standard";
+  return "free";
+}
+
+/** True while the tier's upload cap has not been reached. Premium is unlimited. */
+export function canUploadMore(tier: Tier, usedCount: number): boolean {
+  return usedCount < tierSpec(tier).uploadLimit;
+}
