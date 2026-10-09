@@ -226,21 +226,20 @@ export class SupabaseStore implements DataStore {
     limit: number
   ): Promise<MediaRecord | null> {
     if (!Number.isFinite(limit) || limit <= 0) return null;
-    // Insert then verify: if the post-insert count exceeds the cap we lost a
-    // race, so delete our own row and report the limit as reached. This makes
-    // the cap eventually-consistent under concurrency without a DB round-trip
-    // per pre-check. The fully race-free form is the SQL function in
-    // migration 0002 (insert_media_within_limit) — swap this call for an
-    // `.rpc()` there if guest-upload concurrency ever gets high enough to
-    // matter. `limit` past MAX_SAFE_INTEGER (unlimited tiers) skips the check.
-    const rec = await this.insertMedia(m);
-    if (limit >= Number.MAX_SAFE_INTEGER) return rec;
-    const total = await this.countMedia(m.eventId);
-    if (total > limit) {
-      await this.deleteMedia(rec.id);
-      return null;
-    }
-    return rec;
+    // Unlimited tiers skip the cap entirely (no count needed).
+    if (limit >= Number.MAX_SAFE_INTEGER) return this.insertMedia(m);
+    // Atomic: the SQL function (migration 0002) counts the event's media
+    // under a row lock on the parent event row and inserts only while under
+    // the cap, returning null when the cap is reached. The previous
+    // insert-then-verify compensation raced: two concurrent guest uploads
+    // could both slip past the check (and briefly leak an over-cap row).
+    const { data, error } = await this.db.rpc("insert_media_within_limit", {
+      p_event_id: m.eventId,
+      p_limit: limit,
+      p_row: mediaToRow(m),
+    });
+    if (error) fail("insertMediaWithinLimit", error);
+    return data ? mediaFromRow(data) : null;
   }
   async getMedia(id: string) {
     const { data } = await this.db.from("media").select().eq("id", id).maybeSingle();
