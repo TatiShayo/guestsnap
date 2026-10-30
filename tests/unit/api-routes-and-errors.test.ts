@@ -111,7 +111,6 @@ describe("Host Settings API Route", () => {
     const event = await makeEvent(host.id);
     setSession(host.id, host.email);
 
-    // 1. Update settings
     const req1 = new Request("http://test.local/api/settings", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -134,7 +133,6 @@ describe("Host Settings API Route", () => {
     expect(updatedEvent?.hideUploaderNames).toBe(true);
     expect(updatedEvent?.slideshowPinHash).not.toBeNull();
 
-    // 2. Clear PIN by sending empty string ""
     const req2 = new Request("http://test.local/api/settings", {
       method: "PATCH",
       headers: { "content-type": "application/json" },

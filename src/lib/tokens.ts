@@ -70,4 +70,3 @@ export function verifyPin(pin: string, stored: string): boolean {
     return false;
   }
 }
-

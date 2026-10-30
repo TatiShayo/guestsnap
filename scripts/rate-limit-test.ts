@@ -25,7 +25,6 @@ async function main(): Promise<void> {
   const limit = 5;
   const windowMs = 200;
 
-  // 1. Allows exactly `limit` requests inside the window.
   const results = Array.from({ length: limit + 3 }, () => rateLimit(key, limit, windowMs));
   const allowed = results.filter((r) => r.ok).length;
   check(`allows exactly ${limit} requests in window`, allowed === limit, `allowed=${allowed}`);
@@ -44,18 +43,15 @@ async function main(): Promise<void> {
     `first=${results[0].remaining} second=${results[1].remaining}`
   );
 
-  // 2. Recovers once the window elapses.
   await new Promise((resolve) => setTimeout(resolve, windowMs + 50));
   check("recovers after the window elapses", rateLimit(key, limit, windowMs).ok);
 
-  // 3. Distinct keys are independent.
   _resetRateLimits();
   check(
     "distinct keys are independent",
     rateLimit("independent-a", 1, windowMs).ok && rateLimit("independent-b", 1, windowMs).ok
   );
 
-  // 4. Named presets are configured sanely.
   check(
     "upload presets defined",
     LIMITS.uploadPerIp.limit > 0 && LIMITS.uploadPerEvent.limit > 0 && LIMITS.uploadPerIp.windowMs > 0

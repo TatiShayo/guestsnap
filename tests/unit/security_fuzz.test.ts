@@ -92,9 +92,7 @@ beforeEach(() => {
   _resetRateLimits();
 });
 
-/* ========================================================================= */
 /* ARCHETYPE 1: IDOR & Tenant Isolation                                      */
-/* ========================================================================= */
 describe("Archetype 1: IDOR & Tenant Isolation", () => {
   it("host B cannot modify host A settings via PATCH /settings", async () => {
     const data = getData();
@@ -251,9 +249,7 @@ describe("Archetype 1: IDOR & Tenant Isolation", () => {
   });
 });
 
-/* ========================================================================= */
 /* ARCHETYPE 2: TOCTOU & Concurrency                                         */
-/* ========================================================================= */
 describe("Archetype 2: TOCTOU & Concurrency", () => {
   it("insertMediaWithinLimit strictly prevents concurrent upload limit overshoot", async () => {
     const data = getData();
@@ -316,9 +312,7 @@ describe("Archetype 2: TOCTOU & Concurrency", () => {
   });
 });
 
-/* ========================================================================= */
 /* ARCHETYPE 3: Prototype Pollution & Object Key Injection                   */
-/* ========================================================================= */
 describe("Archetype 3: Prototype Pollution & Object Key Injection", () => {
   it("parseBody drops __proto__, constructor, and prototype keys", async () => {
     const schema = z.object({
@@ -376,9 +370,7 @@ describe("Archetype 3: Prototype Pollution & Object Key Injection", () => {
   });
 });
 
-/* ========================================================================= */
 /* ARCHETYPE 4: Parser Desync & File Upload Hazards                          */
-/* ========================================================================= */
 describe("Archetype 4: Parser Desync & File Upload Hazards", () => {
   it("isSvg detects wide variety of SVG, XML, and HTML script polyglot variants", () => {
     const testCases = [
@@ -470,9 +462,7 @@ describe("Archetype 4: Parser Desync & File Upload Hazards", () => {
   });
 });
 
-/* ========================================================================= */
 /* ARCHETYPE 5: CRLF & Header Injection                                      */
-/* ========================================================================= */
 describe("Archetype 5: CRLF & Header Injection", () => {
   it("QR and Table Card routes sanitize slug against CRLF in Content-Disposition", async () => {
     const data = getData();
@@ -517,9 +507,7 @@ describe("Archetype 5: CRLF & Header Injection", () => {
   });
 });
 
-/* ========================================================================= */
 /* ARCHETYPE 6: Arithmetic Edge Cases                                        */
-/* ========================================================================= */
 describe("Archetype 6: Arithmetic Edge Cases", () => {
   it("gallery pagination arithmetic handles floats, negatives, and huge numbers safely", async () => {
     const data = getData();
@@ -583,9 +571,7 @@ describe("Archetype 6: Arithmetic Edge Cases", () => {
   });
 });
 
-/* ========================================================================= */
 /* ARCHETYPE 7: Decompression Bombs & Memory Limits                          */
-/* ========================================================================= */
 describe("Archetype 7: Decompression Bombs & Memory Limits", () => {
   it("sharp rejects images exceeding limitInputPixels to prevent decompression bombs", async () => {
     // Sharp option limitInputPixels: 50_000_000
@@ -613,9 +599,7 @@ describe("Archetype 7: Decompression Bombs & Memory Limits", () => {
   });
 });
 
-/* ========================================================================= */
 /* ARCHETYPE 8: Cryptographic Timing Attacks                                 */
-/* ========================================================================= */
 describe("Archetype 8: Cryptographic Timing Attacks", () => {
   it("timingSafeEqualString correctly compares identical and divergent strings", () => {
     expect(timingSafeEqualString("secret-token-12345", "secret-token-12345")).toBe(true);

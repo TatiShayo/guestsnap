@@ -35,7 +35,6 @@ test("signup -> create event -> guest upload -> gallery -> upgrade -> ZIP downlo
   const hostContext = await browser.newContext();
   const hostPage = await hostContext.newPage();
 
-  // 1. Signup via memory-mode magic link (dev-link shortcut).
   const email = `host-${Date.now()}@e2e.test`;
   await hostPage.goto("/login");
   await hostPage.getByLabel("Email address").fill(email);
@@ -45,7 +44,6 @@ test("signup -> create event -> guest upload -> gallery -> upgrade -> ZIP downlo
   await devLink.click();
   await hostPage.waitForURL(/\/dashboard/);
 
-  // 2. Create an event.
   await hostPage.goto("/events/new");
   await hostPage.getByLabel("Event name").fill("E2E Test Wedding");
   await hostPage.getByRole("button", { name: /^create event$/i }).click();
@@ -53,7 +51,6 @@ test("signup -> create event -> guest upload -> gallery -> upgrade -> ZIP downlo
   const slug = new URL(hostPage.url()).pathname.split("/").filter(Boolean).pop()!;
   expect(slug.length).toBeGreaterThan(0);
 
-  // 3. Guest uploads 2 photos from an iPhone viewport.
   const guestContext = await browser.newContext({ ...devices["iPhone 13"] });
   const guestPage = await guestContext.newPage();
   await guestPage.goto(`/e/${slug}`);
@@ -62,17 +59,14 @@ test("signup -> create event -> guest upload -> gallery -> upgrade -> ZIP downlo
   await expect(guestPage.getByText(/2 photos added\./i)).toBeVisible({ timeout: 30_000 });
   await guestContext.close();
 
-  // 4. Host sees them in the gallery.
   await hostPage.goto(`/dashboard/${slug}`);
   await expect(hostPage.getByText(/2 photo or videos/i)).toBeVisible();
 
-  // 5. Upgrade via mock checkout (no Stripe key configured -> mock flow).
   await hostPage.getByRole("button", { name: /choose standard/i }).click();
   await hostPage.waitForURL(/\/mock\/checkout/);
   await hostPage.getByRole("button", { name: /pay \(test mode\)/i }).click();
   await hostPage.waitForURL(/\/dashboard\/[^/]+\/success/);
 
-  // 6. Back on the dashboard, the ZIP download link now exists and responds 200.
   await hostPage.goto(`/dashboard/${slug}`);
   const zipLink = hostPage.getByRole("link", { name: /download all/i });
   await expect(zipLink).toBeVisible();

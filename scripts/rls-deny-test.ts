@@ -37,7 +37,6 @@ async function main(): Promise<void> {
 
   console.log("rls-deny-test: anon key must be denied by RLS");
 
-  // 1. Anonymous reads of host-owned tables return nothing.
   const { data: events, error: eventsError } = await anon.from("events").select("id").limit(10);
   check(
     "anon cannot read events",
@@ -59,7 +58,6 @@ async function main(): Promise<void> {
     paymentsError?.message ?? `rows=${(payments ?? []).length}`
   );
 
-  // 2. Anonymous writes are rejected by the policies' WITH CHECK.
   const { error: insertError } = await anon.from("events").insert({
     host_id: "00000000-0000-0000-0000-000000000000",
     slug: `rls-probe-${Date.now()}`,

@@ -30,7 +30,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const { slug } = await params;
   const ip = clientIp(req);
 
-  // 1. Rate limits (per IP, then per event).
   const ipLimit = rateLimit(`upload:ip:${ip}`, LIMITS.uploadPerIp.limit, LIMITS.uploadPerIp.windowMs);
   if (!ipLimit.ok) return jsonError(429, "too_many_requests", { retryAfterSec: ipLimit.retryAfterSec });
 
@@ -41,7 +40,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const evtLimit = rateLimit(`upload:evt:${event.id}`, LIMITS.uploadPerEvent.limit, LIMITS.uploadPerEvent.windowMs);
   if (!evtLimit.ok) return jsonError(429, "too_many_requests", { retryAfterSec: evtLimit.retryAfterSec });
 
-  // 3. Event must be open for uploads.
   if (!event.isActive || event.archivedAt) return jsonError(403, "event_closed");
 
   let form: FormData;
@@ -51,7 +49,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     return jsonError(400, "invalid_request");
   }
 
-  // 2. Captcha (invisible). Mock passes; rate limits still applied above.
   const captchaToken = (form.get("captchaToken") as string) || null;
   const captchaOk = await getCaptchaProvider().verify(captchaToken, ip);
   if (!captchaOk) return jsonError(403, "captcha_failed");
@@ -70,7 +67,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     .slice(0, 64) || null;
   const wantsGuestbook = form.get("guestbook") === "1";
 
-  // 4. Tier upload limit — server-side count is the source of truth. A cheap
   // pre-check rejects early; the authoritative, race-free enforcement is the
   // atomic insertMediaWithinLimit() at persist time (below).
   const spec = TIERS[event.tier];
@@ -82,7 +78,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  // 5. Validate by magic bytes / size / SVG / video duration.
   const check = await validateUpload(buffer);
   if (!check.ok) {
     await serverTrack("guest", "guest_upload_rejected", { event_id: event.id, reason: check.reason });
@@ -115,10 +110,8 @@ async function handlePhoto(
   mime?: string
 ): Promise<Response> {
   const data = getData();
-  // 6. Re-encode -> strips EXIF/GPS, neutralizes malformed files, handles HEIC.
   const processed = await processImage(buffer, mime);
 
-  // 7. Moderation on the re-encoded image.
   const mod = await getModerationProvider().checkImage(processed.original, meta.filename);
   const needsReview = mod.flagged || event.requireApproval;
 

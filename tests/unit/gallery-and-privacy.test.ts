@@ -47,7 +47,6 @@ describe("Gallery Privacy Controls and IDOR Protection", () => {
   it("visibility 'own' without uploaderKey returns empty media list (no data leak)", async () => {
     const event = await createTestEvent({ visibility: "own" });
     const data = getData();
-    // Add media from user A
     await data.insertMedia({
       eventId: event.id,
       storagePath: "events/1/a.jpg",

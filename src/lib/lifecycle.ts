@@ -49,20 +49,17 @@ export async function runLifecycleJobs(): Promise<LifecycleRunResult> {
   for (const event of events) {
     if (event.isDemo) continue;
     try {
-      // 1. Post-event stats + referral email — day after the event date.
       const sinceEvent = daysSince(event.eventDate);
       if (sinceEvent === 1) {
         const sent = await sendPostEventStats(event.id);
         if (sent) result.postEventEmailsSent++;
       }
 
-      // 2. Guest album-request fulfillment — as soon as an email is captured
       //    for an event whose date has passed (host has had a chance to curate).
       if (sinceEvent >= 1) {
         result.albumRequestEmailsSent += await sendAlbumRequestEmails(event.id);
       }
 
-      // 3. Archive warning at day 75 (free) — paid events don't auto-archive.
       const retentionDays = event.tier === "free" ? 90 : event.retentionMonths * 30;
       const warningDays = retentionDays - 15;
       if (event.tier === "free" && sinceEvent === warningDays && !event.archivedAt) {
@@ -70,13 +67,11 @@ export async function runLifecycleJobs(): Promise<LifecycleRunResult> {
         if (sent) result.archiveWarningsSent++;
       }
 
-      // 4. Soft-archive once retention window elapses.
       if (!event.archivedAt && sinceEvent >= retentionDays) {
         await data.updateEvent(event.id, { archivedAt: new Date().toISOString(), isActive: false });
         result.eventsArchived++;
       }
 
-      // 5. Hard purge after the 30-day grace period post-archive.
       if (event.archivedAt && !event.purgedAt && daysSince(event.archivedAt) >= ARCHIVE_GRACE_DAYS) {
         await purgeEventMedia(event.id);
         await data.updateEvent(event.id, { purgedAt: new Date().toISOString() });
